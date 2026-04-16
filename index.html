@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AntLabs — Your Behavioral Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #f5ede3;
+  --bg2: #ede4d8;
+  --card: rgba(255,255,255,0.7);
+  --card-border: rgba(255,255,255,0.9);
+  --ink: #1a1714;
+  --ink2: #3d3830;
+  --ink3: #7a7268;
+  --ink4: #b5aca2;
+  --ora: #e8622a;
+  --ora2: rgba(232,98,42,0.1);
+  --green: #2d6a3f;
+  --green2: rgba(45,106,63,0.1);
+  --r: 16px;
+  --rs: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Ambient orbs */
+body::before {
+  content:'';
+  position:fixed; top:-100px; right:-100px;
+  width:500px; height:500px; border-radius:50%;
+  background:radial-gradient(circle, rgba(232,98,42,0.22) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+body::after {
+  content:'';
+  position:fixed; bottom:-150px; left:-100px;
+  width:450px; height:450px; border-radius:50%;
+  background:radial-gradient(circle, rgba(180,140,100,0.15) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+
+/* ── Nav ── */
+.nav {
+  position: sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 32px;
+  background:rgba(245,237,227,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(0,0,0,0.07);
+}
+.nav-logo {
+  display:flex; align-items:center; gap:9px;
+  font-family:'Instrument Serif',serif;
+  font-size:20px; color:var(--ink);
+  text-decoration:none;
+}
+.nav-logo-mark {
+  width:30px; height:30px; border-radius:8px;
+  background:var(--ink); display:flex; align-items:center;
+  justify-content:center; font-size:16px;
+}
+.nav-right { display:flex; align-items:center; gap:12px; }
+.nav-score {
+  font-family:'DM Mono',monospace; font-size:11px;
+  color:var(--ink3); background:var(--bg2);
+  padding:5px 10px; border-radius:20px;
+}
+.nav-score span { color:var(--ora); font-weight:500; }
+.btn-sm {
+  padding:7px 14px; border-radius:20px; font-size:12px;
+  font-weight:500; cursor:pointer; border:none;
+  font-family:'DM Sans',sans-serif; transition:all .15s;
+}
+.btn-primary { background:var(--ink); color:white; }
+.btn-primary:hover { background:#2d2a27; }
+.btn-ghost { background:rgba(0,0,0,0.06); color:var(--ink2); }
+.btn-ghost:hover { background:rgba(0,0,0,0.1); }
+.btn-danger-sm { background:rgba(220,38,38,0.08); color:#dc2626; border:none; padding:5px 10px; border-radius:8px; font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+
+/* ── Main layout ── */
+main {
+  max-width:1100px; margin:0 auto;
+  padding:32px 24px 80px;
+  position:relative; z-index:1;
+}
+
+/* ── Login state ── */
+#login-screen {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; min-height:70vh; text-align:center;
+}
+.hero-eyebrow {
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--ink4); margin-bottom:12px;
+}
+.hero-title {
+  font-family:'Instrument Serif',serif;
+  font-size:clamp(40px,6vw,72px);
+  color:var(--ink); line-height:1.1;
+  letter-spacing:-1px; margin-bottom:16px;
+}
+.hero-title em { color:var(--ora); font-style:italic; }
+.hero-sub {
+  font-size:15px; color:var(--ink3); line-height:1.7;
+  max-width:480px; margin:0 auto 32px; font-weight:300;
+}
+.google-btn {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:12px 24px; background:white;
+  border:1px solid rgba(0,0,0,0.12); border-radius:100px;
+  font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500;
+  color:var(--ink); cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  transition:all .15s; text-decoration:none;
+}
+.google-btn:hover { box-shadow:0 4px 16px rgba(0,0,0,0.12); transform:translateY(-1px); }
+
+/* ── Dashboard ── */
+#dashboard { display:none; }
+
+/* Stats row */
+.stats-row {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:12px;
+  margin-bottom:24px;
+}
+.stat-card {
+  background:var(--card); backdrop-filter:blur(16px);
+  border:1px solid var(--card-border); border-radius:var(--r);
+  padding:18px 20px;
+}
+.stat-card .label {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--ink4); margin-bottom:8px;
+}
+.stat-card .value {
+  font-family:'Instrument Serif',serif;
+  font-size:36px; color:var(--ink); line-height:1;
+  margin-bottom:4px;
+}
+.stat-card .sub { font-size:11px; color:var(--ink4); }
+.stat-card.accent { background:var(--ink); border-color:var(--ink); }
+.stat-card.accent .label { color:rgba(255,255,255,0.4); }
+.stat-card.accent .value { color:white; }
+.stat-card.accent .sub { color:rgba(255,255,255,0.4); }
+
+/* Score bar */
+.score-bar-wrap {
+  background:var(--card); backdrop-filter:blur(16px);
+  border:1px solid var(--card-border); border-radius:var(--r);
+  padding:18px 20px; margin-bottom:24px;
+}
+.score-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.score-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink4); }
+.score-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; }
+.score-track { height:5px; background:rgba(0,0,0,0.08); border-radius:5px; overflow:hidden; }
+.score-fill { height:100%; border-radius:5px; background:linear-gradient(90deg,var(--ora),#f5a623); transition:width 1s cubic-bezier(0.34,1.56,0.64,1); }
+.score-label { margin-top:7px; font-size:11px; color:var(--ink4); font-family:'DM Mono',monospace; }
+
+/* ── Two-col layout ── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+
+/* Section headers */
+.section-head {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px;
+}
+.section-title {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:1.5px; text-transform:uppercase; color:var(--ink4);
+}
+.section-count {
+  font-family:'DM Mono',monospace; font-size:10px;
+  color:var(--ink4); background:var(--bg2); padding:2px 8px; border-radius:20px;
+}
+
+/* Cards list */
+.cards-container {
+  background:var(--card); backdrop-filter:blur(16px);
+  border:1px solid var(--card-border); border-radius:var(--r);
+  overflow:hidden; max-height:480px; overflow-y:auto;
+}
+.cards-container::-webkit-scrollbar { width:4px; }
+.cards-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.1); border-radius:4px; }
+
+.memory-card {
+  padding:14px 16px;
+  border-bottom:1px solid rgba(0,0,0,0.05);
+  transition:background .1s;
+}
+.memory-card:last-child { border-bottom:none; }
+.memory-card:hover { background:rgba(255,255,255,0.4); }
+.memory-card.excluded { opacity:0.4; }
+
+.card-type {
+  display:inline-block; font-family:'DM Mono',monospace;
+  font-size:8px; font-weight:500; letter-spacing:1px;
+  text-transform:uppercase; padding:2px 7px; border-radius:20px;
+  margin-bottom:6px;
+}
+.type-qa { background:rgba(232,98,42,0.1); color:#c44b18; }
+.type-prompt { background:rgba(180,83,9,0.08); color:#92400e; }
+.type-page { background:rgba(45,106,63,0.09); color:#2d6a3f; }
+
+.card-question {
+  font-size:13px; font-weight:500; color:var(--ink2);
+  margin-bottom:3px; line-height:1.4;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.card-answer {
+  font-size:11px; color:var(--green); font-style:italic;
+  line-height:1.4; margin-bottom:3px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.card-snippet {
+  font-size:11px; color:var(--ink3); line-height:1.4;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.card-footer {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-top:8px;
+}
+.card-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); }
+.card-actions { display:flex; gap:4px; }
+
+/* Full answer expand */
+.card-full {
+  display:none; font-size:11px; color:var(--ink3);
+  line-height:1.6; margin-top:6px; padding-top:6px;
+  border-top:1px solid rgba(0,0,0,0.06);
+  white-space:pre-wrap; word-break:break-word;
+  max-height:200px; overflow-y:auto;
+}
+.card-full.open { display:block; }
+.btn-expand {
+  font-size:10px; color:var(--ink4); background:none; border:none;
+  cursor:pointer; font-family:'DM Mono',monospace; padding:0;
+  margin-top:4px; display:block;
+}
+.btn-expand:hover { color:var(--ink2); }
+
+/* Stacks */
+.stacks-container {
+  background:var(--card); backdrop-filter:blur(16px);
+  border:1px solid var(--card-border); border-radius:var(--r);
+  overflow:hidden;
+}
+.stack-row {
+  padding:14px 16px; border-bottom:1px solid rgba(0,0,0,0.05);
+}
+.stack-row:last-child { border-bottom:none; }
+.stack-sites {
+  font-family:'DM Mono',monospace; font-size:10px;
+  color:var(--ink2); margin-bottom:5px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.stack-meta { display:flex; align-items:center; gap:8px; }
+.stack-conf {
+  font-family:'DM Mono',monospace; font-size:9px;
+  padding:2px 7px; border-radius:20px;
+}
+.conf-high { background:rgba(232,98,42,0.1); color:var(--ora); }
+.conf-mid { background:rgba(45,106,63,0.1); color:var(--green); }
+.stack-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); }
+.stack-bar-bg { height:2px; background:rgba(0,0,0,0.07); border-radius:2px; margin-top:6px; }
+.stack-bar-fill { height:100%; border-radius:2px; background:var(--ora); }
+
+/* Full cards view */
+#all-cards-section { margin-bottom:24px; }
+.filter-row {
+  display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+}
+.filter-btn {
+  padding:5px 12px; border-radius:20px; font-size:11px;
+  font-family:'DM Mono',monospace; cursor:pointer;
+  border:1px solid rgba(0,0,0,0.1); background:var(--bg2);
+  color:var(--ink3); transition:all .1s;
+}
+.filter-btn.active { background:var(--ink); color:white; border-color:var(--ink); }
+
+/* Empty state */
+.empty {
+  padding:40px 20px; text-align:center;
+  color:var(--ink4); font-size:12px; line-height:1.8;
+}
+.empty-icon { font-size:24px; margin-bottom:8px; opacity:0.4; display:block; }
+
+/* Search */
+.search-wrap { position:relative; margin-bottom:12px; }
+.search-input {
+  width:100%; padding:9px 12px 9px 34px;
+  background:var(--card); border:1px solid var(--card-border);
+  border-radius:var(--rs); font-family:'DM Sans',sans-serif;
+  font-size:12px; color:var(--ink); outline:none;
+  backdrop-filter:blur(16px);
+}
+.search-input::placeholder { color:var(--ink4); }
+.search-icon {
+  position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  font-size:13px; pointer-events:none;
+}
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  background:var(--ink); color:white; padding:10px 20px;
+  border-radius:20px; font-size:12px; font-weight:500;
+  opacity:0; transition:opacity .3s; pointer-events:none; z-index:999;
+  white-space:nowrap;
+}
+.toast.show { opacity:1; }
+
+/* Responsive */
+@media(max-width:768px) {
+  .stats-row { grid-template-columns:repeat(2,1fr); }
+  .grid-2 { grid-template-columns:1fr; }
+  .nav { padding:12px 16px; }
+  main { padding:20px 16px 60px; }
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.fade-up { animation:fadeUp 0.4s ease forwards; }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-mark">🐜</div>
+    AntLabs
+  </a>
+  <div class="nav-right">
+    <div class="nav-score" id="nav-score" style="display:none">
+      Score <span id="nav-score-val">0</span>/100
+    </div>
+    <button class="btn-sm btn-ghost" id="sync-btn" style="display:none">↻ Sync</button>
+    <button class="btn-sm btn-ghost" id="signout-btn" style="display:none">Sign out</button>
+  </div>
+</nav>
+
+<main>
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="hero-eyebrow">Behavioral Prediction Engine</div>
+    <h1 class="hero-title">Your AI memory,<br><em>everywhere.</em></h1>
+    <p class="hero-sub">Sign in to view your Digital Passport — every question you've asked across all AI tools, your workflow patterns, and your behavioral graph.</p>
+    <button class="google-btn" id="login-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Sign in with Google
+    </button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+
+    <!-- Stats -->
+    <div class="stats-row fade-up" id="stats-row">
+      <div class="stat-card accent">
+        <div class="label">Memories</div>
+        <div class="value" id="stat-memories">0</div>
+        <div class="sub">Q&A captured</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Sites Tracked</div>
+        <div class="value" id="stat-sites">0</div>
+        <div class="sub">across all tools</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Time Tracked</div>
+        <div class="value" id="stat-time">0m</div>
+        <div class="sub">total active</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Patterns</div>
+        <div class="value" id="stat-patterns">0</div>
+        <div class="sub">workflows detected</div>
+      </div>
+    </div>
+
+    <!-- Score -->
+    <div class="score-bar-wrap fade-up">
+      <div class="score-header">
+        <span class="score-title">Passport Score</span>
+        <span class="score-val"><span id="score-num">0</span>/100</span>
+      </div>
+      <div class="score-track">
+        <div class="score-fill" id="score-fill" style="width:0%"></div>
+      </div>
+      <div class="score-label" id="score-label">Just started</div>
+    </div>
+
+    <!-- Top section: recent memories + stacks -->
+    <div class="grid-2 fade-up">
+
+      <!-- Recent memories -->
+      <div>
+        <div class="section-head">
+          <span class="section-title">Recent Memories</span>
+          <span class="section-count" id="recent-count">0</span>
+        </div>
+        <div class="cards-container" id="recent-cards">
+          <div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>
+        </div>
+      </div>
+
+      <!-- One-click stacks -->
+      <div>
+        <div class="section-head">
+          <span class="section-title">Workflow Stacks</span>
+          <span class="section-count" id="stacks-count">0</span>
+        </div>
+        <div class="stacks-container" id="stacks-list">
+          <div class="empty"><span class="empty-icon">⚡</span>No patterns yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All memories -->
+    <div id="all-cards-section" class="fade-up">
+      <div class="section-head">
+        <span class="section-title">All Context Cards</span>
+        <span class="section-count" id="all-count">0</span>
+      </div>
+
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="search-input" placeholder="Search your memories..." type="text">
+      </div>
+
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="ai_qa">Q&A</button>
+        <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
+        <button class="filter-btn" data-filter="page_visit">Pages</button>
+      </div>
+
+      <div class="cards-container" id="all-cards" style="max-height:600px">
+        <div class="empty"><span class="empty-icon">🧠</span>No cards yet</div>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://cbatdmhhvwociaiggbuw.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiYXRkbWhodndhY2lhaWdnYnV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQyOTA2MTksImV4cCI6MjA1OTg2NjYxOX0.Kp8Kb9fKHk0TkXuHRWBqZ6mN1vY3dL8sE2pQ4wA1xYc';
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentUser = null;
+let allEvents = [];
+let allWorkflows = [];
+let currentFilter = 'all';
+let searchQuery = '';
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function esc(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(ms) {
+  const m = Math.floor((ms||0)/60000);
+  return m < 60 ? m+'m' : Math.floor(m/60)+'h '+(m%60)+'m';
+}
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  if (d < 60000) return 'just now';
+  if (d < 3600000) return Math.floor(d/60000)+'m ago';
+  if (d < 86400000) return Math.floor(d/3600000)+'h ago';
+  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function scoreLabel(s) {
+  if (s<10) return 'Just started';
+  if (s<25) return 'Building up';
+  if (s<45) return 'Taking shape';
+  if (s<65) return 'Well established';
+  if (s<80) return 'Rich passport';
+  return 'Deep passport';
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: redirectTo,
+      skipBrowserRedirect: false
+    }
+  });
+  if (error) toast('Login failed: ' + error.message);
+});
+
+document.getElementById('signout-btn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+// ── Load passport from Supabase ───────────────────────────────────────────────
+async function loadPassport(userId) {
+  const { data, error } = await sb
+    .from('passports')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !data) {
+    document.getElementById('all-cards').innerHTML =
+      '<div class="empty"><span class="empty-icon">🐜</span>No passport found. Install the Chrome extension and use some AI tools first!</div>';
+    return;
+  }
+
+  allEvents = data.events || [];
+  allWorkflows = data.workflows || [];
+  const totalTime = data.total_time || 0;
+  const sites = data.sites || [];
+
+  // Score
+  const daysActive = Math.max(1, Math.floor((Date.now() - (data.first_seen||Date.now())) / 86400000));
+  const hoursTracked = totalTime / 3600;
+  const qaCards = allEvents.filter(e => e.type === 'ai_qa');
+  const cleanWF = allWorkflows.filter(w => {
+    const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter','x.com','reddit','tiktok','netflix','canva','docs.google','drive.google'];
+    const sites2 = (w.sites||[]).filter(s => !noiseList.some(n => s.includes(n)));
+    return sites2.length >= 2 && (w.count||0) >= 2;
+  });
+
+  let score = 0;
+  score += Math.min(20, daysActive*3);
+  score += Math.min(20, Object.keys(sites).length*2);
+  score += Math.min(20, hoursTracked*2);
+  score += Math.min(25, qaCards.length*3);
+  score += Math.min(15, cleanWF.filter(w=>w.count>=5).length*5);
+  score = Math.min(100, Math.round(score));
+
+  // Update stats
+  document.getElementById('stat-memories').textContent = allEvents.filter(e=>!e.excluded).length;
+  document.getElementById('stat-sites').textContent = Array.isArray(sites) ? sites.length : Object.keys(sites).length;
+  document.getElementById('stat-time').textContent = fmt(totalTime*1000);
+  document.getElementById('stat-patterns').textContent = cleanWF.length;
+  document.getElementById('nav-score-val').textContent = score;
+  document.getElementById('nav-score').style.display = 'block';
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-fill').style.width = score + '%';
+  document.getElementById('score-label').textContent = scoreLabel(score);
+
+  renderRecentCards();
+  renderStacks(cleanWF);
+  renderAllCards();
+
+  document.getElementById('sync-btn').style.display = 'block';
+  document.getElementById('signout-btn').style.display = 'block';
+}
+
+// ── Render recent memories ────────────────────────────────────────────────────
+function renderRecentCards() {
+  const container = document.getElementById('recent-cards');
+  const recent = allEvents.filter(e => !e.excluded).slice(0, 8);
+  document.getElementById('recent-count').textContent = recent.length;
+
+  if (!recent.length) {
+    container.innerHTML = '<div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>';
+    return;
+  }
+
+  container.innerHTML = recent.map((ev, i) => renderCard(ev, i, false)).join('');
+  wireCardButtons(container);
+}
+
+// ── Render all cards ──────────────────────────────────────────────────────────
+function renderAllCards() {
+  const container = document.getElementById('all-cards');
+  let filtered = allEvents;
+
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(e => e.type === currentFilter);
+  }
+  if (searchQuery.length > 1) {
+    const q = searchQuery.toLowerCase();
+    filtered = filtered.filter(e =>
+      (e.title||'').toLowerCase().includes(q) ||
+      (e.snippet||'').toLowerCase().includes(q) ||
+      (e.domain||'').toLowerCase().includes(q)
+    );
+  }
+
+  document.getElementById('all-count').textContent = filtered.length;
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="empty"><span class="empty-icon">🔍</span>No cards match</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map((ev, i) => renderCard(ev, i, true)).join('');
+  wireCardButtons(container);
+}
+
+function renderCard(ev, i, showFull) {
+  const typeClass = ev.type === 'ai_qa' ? 'type-qa' : ev.type === 'ai_prompt' ? 'type-prompt' : 'type-page';
+  const typeLabel = ev.type === 'ai_qa' ? 'Q&A' : ev.type === 'ai_prompt' ? 'Prompt' : 'Page';
+  const hasAnswer = ev.type === 'ai_qa' && ev.snippet;
+  const hasFull = ev.fullResponse && ev.fullResponse.length > (ev.snippet||'').length + 20;
+
+  return `<div class="memory-card ${ev.excluded?'excluded':''}" data-id="${esc(String(ev.id))}">
+    <span class="card-type ${typeClass}">${typeLabel}</span>
+    <div class="card-question">${esc((ev.title||'').slice(0,120))}</div>
+    ${hasAnswer ? `<div class="card-answer">${esc((ev.snippet||'').slice(0,160))}</div>` : ''}
+    ${ev.type==='page_visit' && ev.snippet ? `<div class="card-snippet">${esc(ev.snippet.slice(0,140))}</div>` : ''}
+    ${hasFull && showFull ? `<button class="btn-expand" onclick="this.nextSibling.classList.toggle('open');this.textContent=this.nextSibling.classList.contains('open')?'▼ hide':'▶ show full response'">▶ show full response</button><div class="card-full">${esc(ev.fullResponse||'')}</div>` : ''}
+    <div class="card-footer">
+      <span class="card-meta">${esc(ev.domain||'')} · ${timeAgo(ev.timestamp||0)}</span>
+      <div class="card-actions">
+        <button class="btn-danger-sm btn-excl" data-id="${esc(String(ev.id))}">${ev.excluded?'Include':'Exclude'}</button>
+        <button class="btn-danger-sm btn-del" data-id="${esc(String(ev.id))}">Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireCardButtons(container) {
+  container.querySelectorAll('.btn-excl').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const ev = allEvents.find(e => String(e.id) === id);
+      if (ev) {
+        ev.excluded = !ev.excluded;
+        await savePassport();
+        renderRecentCards();
+        renderAllCards();
+        toast(ev.excluded ? 'Card excluded from injection' : 'Card included');
+      }
+    });
+  });
+  container.querySelectorAll('.btn-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this memory permanently?')) return;
+      const id = btn.dataset.id;
+      allEvents = allEvents.filter(e => String(e.id) !== id);
+      await savePassport();
+      renderRecentCards();
+      renderAllCards();
+      toast('Memory deleted');
+    });
+  });
+}
+
+// ── Render stacks ─────────────────────────────────────────────────────────────
+function renderStacks(workflows) {
+  const container = document.getElementById('stacks-list');
+  const visible = workflows.filter(w=>w.count>=2).sort((a,b)=>b.count-a.count).slice(0,6);
+  document.getElementById('stacks-count').textContent = visible.length;
+
+  if (!visible.length) {
+    container.innerHTML = '<div class="empty"><span class="empty-icon">⚡</span>No patterns detected yet</div>';
+    return;
+  }
+
+  container.innerHTML = visible.map(w => {
+    const conf = Math.min(99, 50 + w.count*5);
+    const confClass = conf >= 70 ? 'conf-high' : 'conf-mid';
+    const sites = (w.sites||[]).filter(s => {
+      const noise = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter'];
+      return !noise.some(n=>s.includes(n));
+    });
+    return `<div class="stack-row">
+      <div class="stack-sites">${esc(sites.slice(0,4).join(' → '))}</div>
+      <div class="stack-meta">
+        <span class="stack-conf ${confClass}">${conf >= 88 ? '🔥 ' : ''}${conf}%</span>
+        <span class="stack-count">${w.count}x</span>
+      </div>
+      <div class="stack-bar-bg"><div class="stack-bar-fill" style="width:${conf}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Save passport back to Supabase ────────────────────────────────────────────
+async function savePassport() {
+  if (!currentUser) return;
+  const { error } = await sb.from('passports').upsert({
+    user_id: currentUser.id,
+    events: allEvents,
+    updated_at: new Date().toISOString()
+  });
+  if (error) toast('Save failed: ' + error.message);
+}
+
+// ── Sync button ───────────────────────────────────────────────────────────────
+document.getElementById('sync-btn').addEventListener('click', async () => {
+  if (!currentUser) return;
+  await loadPassport(currentUser.id);
+  toast('Synced from latest data ✓');
+});
+
+// ── Search & filters ──────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQuery = e.target.value.trim();
+  renderAllCards();
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderAllCards();
+  });
+});
+
+// ── Auth state ────────────────────────────────────────────────────────────────
+function showDashboard(user) {
+  currentUser = user;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadPassport(user.id);
+}
+
+function showLogin() {
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+}
+
+async function init() {
+  // Supabase automatically processes the hash fragment — just wait for it
+  // Then check session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    history.replaceState(null, '', window.location.pathname);
+    showDashboard(session.user);
+    return;
+  }
+
+  // Listen for auth state (handles the hash token automatically)
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      history.replaceState(null, '', window.location.pathname);
+      showDashboard(session.user);
+    }
+    if (event === 'SIGNED_OUT') {
+      showLogin();
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
