@@ -448,11 +448,14 @@ main {
         <input class="search-input" id="search-input" placeholder="Search your memories..." type="text">
       </div>
 
-      <div class="filter-row">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="ai_qa">Q&A</button>
-        <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
-        <button class="filter-btn" data-filter="page_visit">Pages</button>
+      <div class="filter-row" style="justify-content:space-between;align-items:center;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="ai_qa">Q&A only</button>
+          <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
+          <button class="filter-btn" data-filter="page_visit">Pages</button>
+        </div>
+        <button id="delete-noise-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 Delete prompts & pages</button>
       </div>
 
       <div class="cards-container" id="all-cards" style="max-height:600px">
@@ -719,6 +722,17 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
   if (!currentUser) return;
   await loadPassport(currentUser.id);
   toast('Synced from latest data ✓');
+});
+
+// Delete noise button
+document.addEventListener('click', async (e) => {
+  if (e.target.id !== 'delete-noise-btn') return;
+  if (!confirm('Delete all Prompt and Page Visit cards? Only Q&A cards will remain.')) return;
+  allEvents = allEvents.filter(e => e.type === 'ai_qa');
+  await savePassport();
+  renderRecentCards();
+  renderAllCards();
+  toast('Noise cleared — only Q&A cards remain');
 });
 
 // ── Search & filters ──────────────────────────────────────────────────────────
