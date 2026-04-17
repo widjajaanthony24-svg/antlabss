@@ -489,7 +489,10 @@ main {
       <span class="section-title">🗑 Trash</span>
       <span class="section-count" id="trash-count">0</span>
     </div>
-    <p style="font-size:11px;color:var(--ink4);margin-bottom:10px;font-family:'DM Mono',monospace;">Cards deleted within 30 days. Restore anytime or delete forever.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <p style="font-size:11px;color:var(--ink4);font-family:'DM Mono',monospace;">Cards deleted within 30 days. Restore anytime or delete forever.</p>
+      <button id="empty-trash-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.08);color:#dc2626;white-space:nowrap;margin-left:12px;">🗑 Empty trash</button>
+    </div>
     <div class="cards-container" id="trash-cards" style="max-height:400px">
       <div class="empty"><span class="empty-icon">🗑</span>Trash is empty</div>
     </div>
@@ -562,12 +565,14 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 function scoreLabel(s) {
-  if (s<10) return 'Just started';
-  if (s<25) return 'Building up';
-  if (s<45) return 'Taking shape';
-  if (s<65) return 'Well established';
-  if (s<80) return 'Rich passport';
-  return 'Deep passport';
+  if (s<10) return 'Empty — use AI tools daily';
+  if (s<20) return 'Shallow — ask more questions';
+  if (s<35) return 'Early signal — keep going';
+  if (s<50) return 'Taking shape — try more LLMs';
+  if (s<65) return 'Solid foundation';
+  if (s<80) return 'Rich context — AI knows you';
+  if (s<92) return 'Deep passport';
+  return 'Expert — AI knows you deeply';
 }
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -614,22 +619,53 @@ async function loadPassport(userId) {
   const totalTime = data.total_time || 0;
   const sites = data.sites || [];
 
-  // Score
+  // Score — harder, reflects true depth of context
+  const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter','x.com','reddit','tiktok','netflix','canva'];
   const daysActive = Math.max(1, Math.floor((Date.now() - (data.first_seen||Date.now())) / 86400000));
   const hoursTracked = totalTime / 3600;
   const qaCards = allEvents.filter(e => e.type === 'ai_qa');
   const cleanWF = allWorkflows.filter(w => {
-    const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter','x.com','reddit','tiktok','netflix','canva','docs.google','drive.google'];
-    const sites2 = (w.sites||[]).filter(s => !noiseList.some(n => s.includes(n)));
-    return sites2.length >= 2 && (w.count||0) >= 2;
+    const s2 = (w.sites||[]).filter(s => !noiseList.some(n => s.includes(n)));
+    return s2.length >= 2 && (w.count||0) >= 3;
   });
 
+  // Topic diversity — how many different subjects covered
+  const TOPICS = ['crypto','bitcoin','finance','invest','tech','code','business','startup','health','learn','science','history','law','marketing'];
+  const allText = qaCards.map(e => (e.title||'') + ' ' + (e.snippet||'')).join(' ').toLowerCase();
+  const topicsCovered = TOPICS.filter(t => allText.includes(t)).length;
+
+  // LLM diversity — how many different AI tools used
+  const llmDomains = new Set(qaCards.map(e => (e.domain||'').split('.')[0]).filter(Boolean));
+
+  // Answer depth — average length of full responses
+  const avgResponseLen = qaCards.length > 0
+    ? qaCards.reduce((sum, e) => sum + (e.fullResponse||e.snippet||'').length, 0) / qaCards.length
+    : 0;
+
+  // Scoring — each dimension is hard to max
   let score = 0;
-  score += Math.min(20, daysActive*3);
-  score += Math.min(20, Object.keys(sites).length*2);
-  score += Math.min(20, hoursTracked*2);
-  score += Math.min(25, qaCards.length*3);
-  score += Math.min(15, cleanWF.filter(w=>w.count>=5).length*5);
+
+  // Consistency (max 15) — need 14+ days active to max
+  score += Math.min(15, Math.floor(daysActive / 14 * 15));
+
+  // Volume (max 15) — need 50+ Q&A cards to max
+  score += Math.min(15, Math.floor(qaCards.length / 50 * 15));
+
+  // Depth (max 20) — need long, detailed answers (avg 800+ chars)
+  score += Math.min(20, Math.floor(avgResponseLen / 800 * 20));
+
+  // Topic breadth (max 15) — need 6+ different topics
+  score += Math.min(15, Math.floor(topicsCovered / 6 * 15));
+
+  // LLM diversity (max 10) — using 4+ different AI tools
+  score += Math.min(10, Math.floor(llmDomains.size / 4 * 10));
+
+  // Workflow habits (max 15) — need 5+ locked workflows
+  score += Math.min(15, cleanWF.filter(w=>w.count>=5).length * 3);
+
+  // Time investment (max 10) — need 20+ hours tracked
+  score += Math.min(10, Math.floor(hoursTracked / 20 * 10));
+
   score = Math.min(100, Math.round(score));
 
   // Update stats
@@ -653,6 +689,30 @@ async function loadPassport(userId) {
 }
 
 // ── Render recent memories ────────────────────────────────────────────────────
+function updateScoreDisplay() {
+  // Recalculate score from current allEvents without full reload
+  const qaCards = allEvents.filter(e => e.type === 'ai_qa');
+  const TOPICS = ['crypto','bitcoin','finance','invest','tech','code','business','startup','health','learn','science','history','law','marketing'];
+  const allText = qaCards.map(e => (e.title||'') + ' ' + (e.snippet||'')).join(' ').toLowerCase();
+  const topicsCovered = TOPICS.filter(t => allText.includes(t)).length;
+  const llmDomains = new Set(qaCards.map(e => (e.domain||'').split('.')[0]).filter(Boolean));
+  const avgResponseLen = qaCards.length > 0
+    ? qaCards.reduce((sum, e) => sum + (e.fullResponse||e.snippet||'').length, 0) / qaCards.length : 0;
+
+  let score = 0;
+  score += Math.min(15, Math.floor(qaCards.length / 50 * 15));
+  score += Math.min(20, Math.floor(avgResponseLen / 800 * 20));
+  score += Math.min(15, Math.floor(topicsCovered / 6 * 15));
+  score += Math.min(10, Math.floor(llmDomains.size / 4 * 10));
+  score = Math.min(100, Math.round(score));
+
+  document.getElementById('stat-memories').textContent = allEvents.filter(e=>!e.excluded).length;
+  document.getElementById('nav-score-val').textContent = score;
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-fill').style.width = score + '%';
+  document.getElementById('score-label').textContent = scoreLabel(score);
+}
+
 function renderRecentCards() {
   const container = document.getElementById('recent-cards');
   const recent = allEvents.filter(e => !e.excluded).slice(0, 8);
@@ -736,11 +796,12 @@ function wireCardButtons(container) {
       const id = btn.dataset.id;
       const ev = allEvents.find(e => String(e.id) === id);
       if (!ev) return;
-      // Move to trash instead of permanent delete
       ev.deletedAt = Date.now();
       allEvents = allEvents.filter(e => String(e.id) !== id);
       trashedEvents.unshift(ev);
       await savePassport();
+      // Recalculate score after delete
+      updateScoreDisplay();
       renderRecentCards();
       renderAllCards();
       renderTrash();
@@ -807,6 +868,16 @@ document.addEventListener('click', async (e) => {
     await savePassport();
     renderRecentCards(); renderAllCards(); renderTrash();
     toast('All Q&A moved to trash — recoverable for 30 days');
+  }
+
+  if (id === 'empty-trash-btn') {
+    if (!trashedEvents.length) return;
+    if (!confirm('Permanently delete all ' + trashedEvents.length + ' trashed cards? This cannot be undone.')) return;
+    trashedEvents = [];
+    await savePassport();
+    renderTrash();
+    toast('Trash emptied permanently');
+    return;
   }
 
   if (id === 'delete-all-btn') {
