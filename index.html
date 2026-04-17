@@ -192,8 +192,10 @@ main {
   border:1px solid var(--card-border); border-radius:var(--r);
   overflow:hidden; max-height:480px; overflow-y:auto;
 }
-.cards-container::-webkit-scrollbar { width:4px; }
-.cards-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.1); border-radius:4px; }
+.cards-container::-webkit-scrollbar { width:8px; }
+.cards-container::-webkit-scrollbar-track { background:rgba(0,0,0,0.03); border-radius:4px; }
+.cards-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:4px; }
+.cards-container::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,0.25); }
 
 .memory-card {
   padding:14px 16px;
@@ -232,7 +234,9 @@ main {
   display:flex; align-items:center; justify-content:space-between;
   margin-top:8px;
 }
-.card-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); }
+.card-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); display:flex; align-items:center; gap:6px; }
+.llm-logo { width:14px; height:14px; border-radius:3px; object-fit:contain; flex-shrink:0; }
+.llm-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px; font-size:9px; color:var(--ink3); font-family:'DM Mono',monospace; }
 .card-actions { display:flex; gap:4px; }
 
 /* Full answer expand */
@@ -455,7 +459,11 @@ main {
           <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
           <button class="filter-btn" data-filter="page_visit">Pages</button>
         </div>
-        <button id="delete-noise-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 Delete prompts & pages</button>
+        <div style="display:flex;gap:6px;">
+          <button id="delete-noise-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 Prompts & pages</button>
+          <button id="delete-all-qa-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 All Q&A</button>
+          <button id="delete-all-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.1);color:#dc2626;font-weight:500;">🗑 Everything</button>
+        </div>
       </div>
 
       <div class="cards-container" id="all-cards" style="max-height:600px">
@@ -484,6 +492,35 @@ let searchQuery = '';
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function esc(str) {
   return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// LLM logo mapping
+const LLM_LOGOS = {
+  'chatgpt.com': { icon: '🤖', color: '#10a37f', label: 'ChatGPT' },
+  'chat.openai.com': { icon: '🤖', color: '#10a37f', label: 'ChatGPT' },
+  'claude.ai': { icon: '✳️', color: '#cc785c', label: 'Claude' },
+  'anthropic.com': { icon: '✳️', color: '#cc785c', label: 'Claude' },
+  'gemini.google.com': { icon: '♊', color: '#1a73e8', label: 'Gemini' },
+  'bard.google.com': { icon: '♊', color: '#1a73e8', label: 'Gemini' },
+  'perplexity.ai': { icon: '🔍', color: '#20808d', label: 'Perplexity' },
+  'grok.com': { icon: '𝕏', color: '#000000', label: 'Grok' },
+  'x.com': { icon: '𝕏', color: '#000000', label: 'Grok' },
+  'deepseek.com': { icon: '🐋', color: '#4d6bfe', label: 'DeepSeek' },
+  'manus.im': { icon: '🤝', color: '#6366f1', label: 'Manus' },
+  'mistral.ai': { icon: '🌊', color: '#ff7000', label: 'Mistral' },
+  'poe.com': { icon: '⚡', color: '#7c3aed', label: 'Poe' },
+  'groq.com': { icon: '⚡', color: '#f97316', label: 'Groq' },
+  'you.com': { icon: '🔎', color: '#0ea5e9', label: 'You.com' },
+  'phind.com': { icon: '🔬', color: '#6366f1', label: 'Phind' },
+  'meta.ai': { icon: '🦙', color: '#0082fb', label: 'Meta AI' },
+  'copilot.microsoft.com': { icon: '🪟', color: '#0078d4', label: 'Copilot' },
+};
+
+function getLLMBadge(domain) {
+  if (!domain) return '';
+  const key = Object.keys(LLM_LOGOS).find(k => domain.includes(k));
+  const llm = key ? LLM_LOGOS[key] : { icon: '🤖', color: '#666', label: domain.split('.')[0] };
+  return '<span class="llm-badge" style="background:' + llm.color + '15;color:' + llm.color + ';border:1px solid ' + llm.color + '25;">' + llm.icon + ' ' + esc(llm.label) + '</span>';
 }
 function fmt(ms) {
   const m = Math.floor((ms||0)/60000);
@@ -641,7 +678,7 @@ function renderCard(ev, i, showFull) {
     ${ev.type==='page_visit' && ev.snippet ? `<div class="card-snippet">${esc(ev.snippet.slice(0,140))}</div>` : ''}
     ${hasFull && showFull ? `<button class="btn-expand" onclick="this.nextSibling.classList.toggle('open');this.textContent=this.nextSibling.classList.contains('open')?'▼ hide':'▶ show full response'">▶ show full response</button><div class="card-full">${esc(ev.fullResponse||'')}</div>` : ''}
     <div class="card-footer">
-      <span class="card-meta">${esc(ev.domain||'')} · ${timeAgo(ev.timestamp||0)}</span>
+      <span class="card-meta">${getLLMBadge(ev.domain)} <span>${timeAgo(ev.timestamp||0)}</span></span>
       <div class="card-actions">
         <button class="btn-danger-sm btn-excl" data-id="${esc(String(ev.id))}">${ev.excluded?'Include':'Exclude'}</button>
         <button class="btn-danger-sm btn-del" data-id="${esc(String(ev.id))}">Delete</button>
@@ -724,15 +761,33 @@ document.getElementById('sync-btn').addEventListener('click', async () => {
   toast('Synced from latest data ✓');
 });
 
-// Delete noise button
+// Delete buttons
 document.addEventListener('click', async (e) => {
-  if (e.target.id !== 'delete-noise-btn') return;
-  if (!confirm('Delete all Prompt and Page Visit cards? Only Q&A cards will remain.')) return;
-  allEvents = allEvents.filter(e => e.type === 'ai_qa');
-  await savePassport();
-  renderRecentCards();
-  renderAllCards();
-  toast('Noise cleared — only Q&A cards remain');
+  const id = e.target.id;
+
+  if (id === 'delete-noise-btn') {
+    if (!confirm('Delete all Prompt and Page Visit cards?')) return;
+    allEvents = allEvents.filter(ev => ev.type === 'ai_qa');
+    await savePassport();
+    renderRecentCards(); renderAllCards();
+    toast('Prompts & pages deleted');
+  }
+
+  if (id === 'delete-all-qa-btn') {
+    if (!confirm('Delete ALL Q&A cards? This removes all your AI memories.')) return;
+    allEvents = allEvents.filter(ev => ev.type !== 'ai_qa');
+    await savePassport();
+    renderRecentCards(); renderAllCards();
+    toast('All Q&A cards deleted');
+  }
+
+  if (id === 'delete-all-btn') {
+    if (!confirm('Delete EVERYTHING? This cannot be undone.')) return;
+    allEvents = [];
+    await savePassport();
+    renderRecentCards(); renderAllCards();
+    toast('All cards deleted');
+  }
 });
 
 // ── Search & filters ──────────────────────────────────────────────────────────
