@@ -513,6 +513,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 let currentUser = null;
 let allEvents = [];
 let allWorkflows = [];
+let currentSites = {};
+let currentTotalTime = 0;
 let currentFilter = 'all';
 let searchQuery = '';
 
@@ -615,6 +617,8 @@ async function loadPassport(userId) {
 
   allEvents = data.events || [];
   allWorkflows = data.workflows || [];
+  currentSites = data.sites || {};
+  currentTotalTime = data.total_time || 0;
   trashedEvents = (data.trash || []).filter(e => (Date.now() - (e.deletedAt||0)) < 30 * 86400000);
   const totalTime = data.total_time || 0;
   const sites = data.sites || [];
@@ -983,13 +987,43 @@ function renderTrash() {
 
 async function savePassport() {
   if (!currentUser) return;
-  const { error } = await sb.from('passports').upsert({
+
+  // Show saving indicator
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn) syncBtn.textContent = '↻ Saving...';
+
+  // Try full save with trash column
+  let { error } = await sb.from('passports').upsert({
     user_id: currentUser.id,
     events: allEvents,
     trash: trashedEvents,
+    workflows: allWorkflows,
+    sites: currentSites,
+    total_time: currentTotalTime,
     updated_at: new Date().toISOString()
   });
-  if (error) toast('Save failed: ' + error.message);
+
+  // If trash column doesn't exist yet, save without it
+  if (error && error.message && error.message.includes('trash')) {
+    const result = await sb.from('passports').upsert({
+      user_id: currentUser.id,
+      events: allEvents,
+      workflows: allWorkflows,
+      sites: currentSites,
+      total_time: currentTotalTime,
+      updated_at: new Date().toISOString()
+    });
+    error = result.error;
+  }
+
+  if (syncBtn) syncBtn.textContent = '↻ Sync';
+
+  if (error) {
+    toast('Save failed: ' + error.message);
+    console.error('Save failed:', error);
+  } else {
+    toast('Saved ✓');
+  }
 }
 
 async function init() {
