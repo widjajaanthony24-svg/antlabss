@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AntLabs — Your Behavioral Memory</title>
+<title>AntLabs — Your AI Memory Layer</title>
+<meta name="description" content="AntLabs silently captures your Q&A across every AI tool and injects your context everywhere. One memory layer for all your LLMs.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -20,473 +21,469 @@
   --ora: #e8622a;
   --ora2: rgba(232,98,42,0.1);
   --green: #2d6a3f;
-  --green2: rgba(45,106,63,0.1);
   --r: 16px;
   --rs: 12px;
 }
-* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
-
-body {
-  font-family:'DM Sans',sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  min-height: 100vh;
-  position: relative;
-}
-
-/* Ambient orbs */
-body::before {
-  content:'';
-  position:fixed; top:-100px; right:-100px;
-  width:500px; height:500px; border-radius:50%;
-  background:radial-gradient(circle, rgba(232,98,42,0.22) 0%, transparent 70%);
-  pointer-events:none; z-index:0;
-}
-body::after {
-  content:'';
-  position:fixed; bottom:-150px; left:-100px;
-  width:450px; height:450px; border-radius:50%;
-  background:radial-gradient(circle, rgba(180,140,100,0.15) 0%, transparent 70%);
-  pointer-events:none; z-index:0;
-}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;top:-100px;right:-100px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(232,98,42,0.22) 0%,transparent 70%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;bottom:-150px;left:-100px;width:450px;height:450px;border-radius:50%;background:radial-gradient(circle,rgba(180,140,100,0.15) 0%,transparent 70%);pointer-events:none;z-index:0;}
 
 /* ── Nav ── */
-.nav {
-  position: sticky; top:0; z-index:100;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 32px;
-  background:rgba(245,237,227,0.85);
-  backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(0,0,0,0.07);
-}
-.nav-logo {
-  display:flex; align-items:center; gap:9px;
-  font-family:'Instrument Serif',serif;
-  font-size:20px; color:var(--ink);
-  text-decoration:none;
-}
-.nav-logo-mark {
-  width:30px; height:30px; border-radius:8px;
-  background:var(--ink); display:flex; align-items:center;
-  justify-content:center; font-size:16px;
-}
-.nav-right { display:flex; align-items:center; gap:12px; }
-.nav-score {
-  font-family:'DM Mono',monospace; font-size:11px;
-  color:var(--ink3); background:var(--bg2);
-  padding:5px 10px; border-radius:20px;
-}
-.nav-score span { color:var(--ora); font-weight:500; }
-.btn-sm {
-  padding:7px 14px; border-radius:20px; font-size:12px;
-  font-weight:500; cursor:pointer; border:none;
-  font-family:'DM Sans',sans-serif; transition:all .15s;
-}
-.btn-primary { background:var(--ink); color:white; }
-.btn-primary:hover { background:#2d2a27; }
-.btn-ghost { background:rgba(0,0,0,0.06); color:var(--ink2); }
-.btn-ghost:hover { background:rgba(0,0,0,0.1); }
-.btn-danger-sm { background:rgba(220,38,38,0.08); color:#dc2626; border:none; padding:5px 10px; border-radius:8px; font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 32px;background:rgba(245,237,227,0.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.07);}
+.nav-logo{display:flex;align-items:center;gap:9px;font-family:'Instrument Serif',serif;font-size:20px;color:var(--ink);text-decoration:none;cursor:pointer;}
+.nav-logo-mark{width:30px;height:30px;border-radius:8px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-score{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink3);background:var(--bg2);padding:5px 10px;border-radius:20px;}
+.nav-score span{color:var(--ora);font-weight:500;}
+.btn-sm{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.btn-primary{background:var(--ink);color:white;}
+.btn-primary:hover{background:#2d2a27;}
+.btn-ghost{background:rgba(0,0,0,0.06);color:var(--ink2);}
+.btn-ghost:hover{background:rgba(0,0,0,0.1);}
+.btn-danger-sm{background:rgba(220,38,38,0.08);color:#dc2626;border:none;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}
 
-/* ── Main layout ── */
-main {
-  max-width:1100px; margin:0 auto;
-  padding:32px 24px 80px;
-  position:relative; z-index:1;
-}
+main{max-width:1100px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1;}
 
-/* ── Login state ── */
-#login-screen {
-  display:flex; flex-direction:column; align-items:center;
-  justify-content:center; min-height:70vh; text-align:center;
-}
-.hero-eyebrow {
-  font-family:'DM Mono',monospace; font-size:10px;
-  letter-spacing:2px; text-transform:uppercase;
-  color:var(--ink4); margin-bottom:12px;
-}
-.hero-title {
-  font-family:'Instrument Serif',serif;
-  font-size:clamp(40px,6vw,72px);
-  color:var(--ink); line-height:1.1;
-  letter-spacing:-1px; margin-bottom:16px;
-}
-.hero-title em { color:var(--ora); font-style:italic; }
-.hero-sub {
-  font-size:15px; color:var(--ink3); line-height:1.7;
-  max-width:480px; margin:0 auto 32px; font-weight:300;
-}
-.google-btn {
-  display:inline-flex; align-items:center; gap:10px;
-  padding:12px 24px; background:white;
-  border:1px solid rgba(0,0,0,0.12); border-radius:100px;
-  font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500;
-  color:var(--ink); cursor:pointer;
-  box-shadow:0 2px 8px rgba(0,0,0,0.08);
-  transition:all .15s; text-decoration:none;
-}
-.google-btn:hover { box-shadow:0 4px 16px rgba(0,0,0,0.12); transform:translateY(-1px); }
+/* ════════════════════════════════════════
+   LANDING PAGE
+════════════════════════════════════════ */
+#landing-screen{display:block;}
 
-/* ── Dashboard ── */
-#dashboard { display:none; }
+/* Hero */
+.hero-section{padding:80px 0 60px;text-align:center;}
+.hero-eyebrow{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:16px;}
+.hero-title{font-family:'Instrument Serif',serif;font-size:clamp(48px,7vw,88px);color:var(--ink);line-height:1.05;letter-spacing:-2px;margin-bottom:20px;}
+.hero-title em{color:var(--ora);font-style:italic;}
+.hero-sub{font-size:16px;color:var(--ink3);line-height:1.75;max-width:520px;margin:0 auto 36px;font-weight:300;}
+.hero-actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:60px;}
+.btn-hero{padding:13px 28px;border-radius:100px;font-size:14px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.btn-hero-primary{background:var(--ink);color:white;}
+.btn-hero-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.18);}
+.btn-hero-ghost{background:rgba(0,0,0,0.06);color:var(--ink2);border:1px solid rgba(0,0,0,0.08);}
+.btn-hero-ghost:hover{background:rgba(0,0,0,0.1);}
 
-/* Stats row */
-.stats-row {
-  display:grid; grid-template-columns:repeat(4,1fr); gap:12px;
-  margin-bottom:24px;
-}
-.stat-card {
-  background:var(--card); backdrop-filter:blur(16px);
-  border:1px solid var(--card-border); border-radius:var(--r);
-  padding:18px 20px;
-}
-.stat-card .label {
-  font-family:'DM Mono',monospace; font-size:9px;
-  letter-spacing:1.5px; text-transform:uppercase;
-  color:var(--ink4); margin-bottom:8px;
-}
-.stat-card .value {
-  font-family:'Instrument Serif',serif;
-  font-size:36px; color:var(--ink); line-height:1;
-  margin-bottom:4px;
-}
-.stat-card .sub { font-size:11px; color:var(--ink4); }
-.stat-card.accent { background:var(--ink); border-color:var(--ink); }
-.stat-card.accent .label { color:rgba(255,255,255,0.4); }
-.stat-card.accent .value { color:white; }
-.stat-card.accent .sub { color:rgba(255,255,255,0.4); }
+/* Live demo strip */
+.demo-strip{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:16px 20px;max-width:680px;margin:0 auto 80px;text-align:left;}
+.demo-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px;}
+.demo-flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.demo-site{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,0.05);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;color:var(--ink2);}
+.demo-arrow{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink4);}
+.demo-injected{background:rgba(232,98,42,0.1);color:var(--ora);border:1px solid rgba(232,98,42,0.2);padding:6px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;}
 
-/* Score bar */
-.score-bar-wrap {
-  background:var(--card); backdrop-filter:blur(16px);
-  border:1px solid var(--card-border); border-radius:var(--r);
-  padding:18px 20px; margin-bottom:24px;
-}
-.score-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.score-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink4); }
-.score-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; }
-.score-track { height:5px; background:rgba(0,0,0,0.08); border-radius:5px; overflow:hidden; }
-.score-fill { height:100%; border-radius:5px; background:linear-gradient(90deg,var(--ora),#f5a623); transition:width 1s cubic-bezier(0.34,1.56,0.64,1); }
-.score-label { margin-top:7px; font-size:11px; color:var(--ink4); font-family:'DM Mono',monospace; }
+/* How it works */
+.section-block{margin-bottom:80px;}
+.section-eyebrow{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);text-align:center;margin-bottom:12px;}
+.section-title{font-family:'Instrument Serif',serif;font-size:clamp(30px,4vw,48px);color:var(--ink);text-align:center;letter-spacing:-0.8px;margin-bottom:48px;}
+.steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.step-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:24px;}
+.step-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--ora);margin-bottom:12px;}
+.step-title{font-family:'Instrument Serif',serif;font-size:20px;color:var(--ink);margin-bottom:8px;}
+.step-desc{font-size:13px;color:var(--ink3);line-height:1.65;font-weight:300;}
 
-/* ── Two-col layout ── */
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+/* Features */
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+.feature-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:24px;}
+.feature-icon{font-size:22px;margin-bottom:12px;}
+.feature-title{font-size:15px;font-weight:500;color:var(--ink);margin-bottom:6px;}
+.feature-desc{font-size:12px;color:var(--ink3);line-height:1.65;font-weight:300;}
 
-/* Section headers */
-.section-head {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-bottom:12px;
-}
-.section-title {
-  font-family:'DM Mono',monospace; font-size:9px;
-  letter-spacing:1.5px; text-transform:uppercase; color:var(--ink4);
-}
-.section-count {
-  font-family:'DM Mono',monospace; font-size:10px;
-  color:var(--ink4); background:var(--bg2); padding:2px 8px; border-radius:20px;
-}
+/* LLM list */
+.llm-strip{text-align:center;margin-bottom:80px;}
+.llm-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:16px;}
+.llm-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;}
+.llm-pill{background:rgba(0,0,0,0.05);border:1px solid rgba(0,0,0,0.07);border-radius:20px;padding:6px 14px;font-size:12px;font-family:'DM Mono',monospace;color:var(--ink3);}
 
-/* Cards list */
-.cards-container {
-  background:var(--card); backdrop-filter:blur(16px);
-  border:1px solid var(--card-border); border-radius:var(--r);
-  overflow:hidden; max-height:480px; overflow-y:auto;
-}
-.cards-container::-webkit-scrollbar { width:8px; }
-.cards-container::-webkit-scrollbar-track { background:rgba(0,0,0,0.03); border-radius:4px; }
-.cards-container::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:4px; }
-.cards-container::-webkit-scrollbar-thumb:hover { background:rgba(0,0,0,0.25); }
+/* Pricing */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+.pricing-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:28px 24px;}
+.pricing-card.featured{background:var(--ink);border-color:var(--ink);}
+.pricing-tier{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink4);margin-bottom:12px;}
+.pricing-card.featured .pricing-tier{color:rgba(255,255,255,0.4);}
+.pricing-price{font-family:'Instrument Serif',serif;font-size:40px;color:var(--ink);line-height:1;margin-bottom:4px;}
+.pricing-card.featured .pricing-price{color:white;}
+.pricing-period{font-size:12px;color:var(--ink4);margin-bottom:16px;}
+.pricing-card.featured .pricing-period{color:rgba(255,255,255,0.4);}
+.pricing-features{list-style:none;margin-bottom:24px;}
+.pricing-features li{font-size:12px;color:var(--ink3);padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;align-items:center;gap:8px;}
+.pricing-card.featured .pricing-features li{color:rgba(255,255,255,0.65);border-bottom-color:rgba(255,255,255,0.08);}
+.pricing-features li::before{content:'✓';color:var(--ora);font-weight:600;font-size:11px;flex-shrink:0;}
+.pricing-card.featured .pricing-features li::before{color:rgba(255,255,255,0.5);}
+.btn-pricing{width:100%;padding:10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;}
+.btn-pricing-outline{background:transparent;color:var(--ink);border:1px solid rgba(0,0,0,0.12);}
+.btn-pricing-outline:hover{background:rgba(0,0,0,0.04);}
+.btn-pricing-white{background:white;color:var(--ink);}
+.btn-pricing-white:hover{background:#f5f5f5;}
 
-.memory-card {
-  padding:14px 16px;
-  border-bottom:1px solid rgba(0,0,0,0.05);
-  transition:background .1s;
-}
-.memory-card:last-child { border-bottom:none; }
-.memory-card:hover { background:rgba(255,255,255,0.4); }
-.memory-card.excluded { opacity:0.4; }
+/* CTA section */
+.cta-section{text-align:center;padding:60px 0 20px;}
+.cta-title{font-family:'Instrument Serif',serif;font-size:clamp(32px,5vw,60px);color:var(--ink);letter-spacing:-1px;margin-bottom:16px;}
+.cta-sub{font-size:14px;color:var(--ink3);margin-bottom:32px;font-weight:300;}
 
-.card-type {
-  display:inline-block; font-family:'DM Mono',monospace;
-  font-size:8px; font-weight:500; letter-spacing:1px;
-  text-transform:uppercase; padding:2px 7px; border-radius:20px;
-  margin-bottom:6px;
-}
-.type-qa { background:rgba(232,98,42,0.1); color:#c44b18; }
-.type-prompt { background:rgba(180,83,9,0.08); color:#92400e; }
-.type-page { background:rgba(45,106,63,0.09); color:#2d6a3f; }
+/* ════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════ */
+#dashboard{display:none;padding-top:32px;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:18px 20px;}
+.stat-card .label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px;}
+.stat-card .value{font-family:'Instrument Serif',serif;font-size:36px;color:var(--ink);line-height:1;margin-bottom:4px;}
+.stat-card .sub{font-size:11px;color:var(--ink4);}
+.stat-card.accent{background:var(--ink);border-color:var(--ink);}
+.stat-card.accent .label{color:rgba(255,255,255,0.4);}
+.stat-card.accent .value{color:white;}
+.stat-card.accent .sub{color:rgba(255,255,255,0.4);}
+.score-bar-wrap{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);padding:18px 20px;margin-bottom:24px;}
+.score-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.score-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);}
+.score-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+.score-track{height:5px;background:rgba(0,0,0,0.08);border-radius:5px;overflow:hidden;}
+.score-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--ora),#f5a623);transition:width 1s cubic-bezier(0.34,1.56,0.64,1);}
+.score-label{margin-top:7px;font-size:11px;color:var(--ink4);font-family:'DM Mono',monospace;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.section-title-sm{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink4);}
+.section-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink4);background:var(--bg2);padding:2px 8px;border-radius:20px;}
+.cards-container{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);overflow:hidden;max-height:480px;overflow-y:auto;}
+.cards-container::-webkit-scrollbar{width:8px;}
+.cards-container::-webkit-scrollbar-track{background:rgba(0,0,0,0.03);border-radius:4px;}
+.cards-container::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:4px;}
+.memory-card{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.05);transition:background .1s;}
+.memory-card:last-child{border-bottom:none;}
+.memory-card:hover{background:rgba(255,255,255,0.4);}
+.memory-card.excluded{opacity:0.4;}
+.card-type{display:inline-block;font-family:'DM Mono',monospace;font-size:8px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-bottom:6px;}
+.type-qa{background:rgba(232,98,42,0.1);color:#c44b18;}
+.type-prompt{background:rgba(180,83,9,0.08);color:#92400e;}
+.type-page{background:rgba(45,106,63,0.09);color:#2d6a3f;}
+.card-question{font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:3px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-answer{font-size:11px;color:var(--green);font-style:italic;line-height:1.4;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-snippet{font-size:11px;color:var(--ink3);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.card-meta{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);display:flex;align-items:center;gap:6px;}
+.llm-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,0.05);padding:2px 6px;border-radius:10px;font-size:9px;color:var(--ink3);font-family:'DM Mono',monospace;}
+.card-actions{display:flex;gap:4px;}
+.card-full{display:none;font-size:11px;color:var(--ink3);line-height:1.6;margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.06);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;}
+.card-full.open{display:block;}
+.btn-expand{font-size:10px;color:var(--ink4);background:none;border:none;cursor:pointer;font-family:'DM Mono',monospace;padding:0;margin-top:4px;display:block;}
+.stacks-container{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--card-border);border-radius:var(--r);overflow:hidden;}
+.stack-row{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.05);}
+.stack-row:last-child{border-bottom:none;}
+.stack-sites{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink2);margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.stack-meta{display:flex;align-items:center;gap:8px;}
+.stack-conf{font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:20px;}
+.conf-high{background:rgba(232,98,42,0.1);color:var(--ora);}
+.conf-mid{background:rgba(45,106,63,0.1);color:var(--green);}
+.stack-count{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4);}
+.stack-bar-bg{height:2px;background:rgba(0,0,0,0.07);border-radius:2px;margin-top:6px;}
+.stack-bar-fill{height:100%;border-radius:2px;background:var(--ora);}
+#all-cards-section{margin-bottom:24px;}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.filter-btn{padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(0,0,0,0.1);background:var(--bg2);color:var(--ink3);transition:all .1s;}
+.filter-btn.active{background:var(--ink);color:white;border-color:var(--ink);}
+.empty{padding:40px 20px;text-align:center;color:var(--ink4);font-size:12px;line-height:1.8;}
+.empty-icon{font-size:24px;margin-bottom:8px;opacity:0.4;display:block;}
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-input{width:100%;padding:9px 12px 9px 34px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);outline:none;backdrop-filter:blur(16px);}
+.search-input::placeholder{color:var(--ink4);}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;}
+.trash-section{margin-bottom:24px;}
+.trash-card{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.05);opacity:0.65;transition:background .1s;}
+.trash-card:hover{background:rgba(255,255,255,0.4);opacity:1;}
+.trash-meta-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+.trash-days{font-family:'DM Mono',monospace;font-size:9px;color:#dc2626;}
+.btn-restore{padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;border:1px solid rgba(45,106,63,0.3);background:rgba(45,106,63,0.08);color:#2d6a3f;font-family:'DM Sans',sans-serif;}
+.btn-perm-del{padding:3px 8px;border-radius:6px;font-size:10px;cursor:pointer;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.08);color:#dc2626;font-family:'DM Sans',sans-serif;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap;}
+.toast.show{opacity:1;}
 
-.card-question {
-  font-size:13px; font-weight:500; color:var(--ink2);
-  margin-bottom:3px; line-height:1.4;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+@media(max-width:768px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .grid-2{grid-template-columns:1fr;}
+  .steps-grid{grid-template-columns:1fr;}
+  .features-grid{grid-template-columns:1fr;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .nav{padding:12px 16px;}
+  main{padding:0 16px 60px;}
+  .hero-section{padding:48px 0 40px;}
 }
-.card-answer {
-  font-size:11px; color:var(--green); font-style:italic;
-  line-height:1.4; margin-bottom:3px;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
-.card-snippet {
-  font-size:11px; color:var(--ink3); line-height:1.4;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
-.card-footer {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-top:8px;
-}
-.card-meta { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); display:flex; align-items:center; gap:6px; }
-.llm-logo { width:14px; height:14px; border-radius:3px; object-fit:contain; flex-shrink:0; }
-.llm-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:10px; font-size:9px; color:var(--ink3); font-family:'DM Mono',monospace; }
-.card-actions { display:flex; gap:4px; }
-
-/* Full answer expand */
-.card-full {
-  display:none; font-size:11px; color:var(--ink3);
-  line-height:1.6; margin-top:6px; padding-top:6px;
-  border-top:1px solid rgba(0,0,0,0.06);
-  white-space:pre-wrap; word-break:break-word;
-  max-height:200px; overflow-y:auto;
-}
-.card-full.open { display:block; }
-.btn-expand {
-  font-size:10px; color:var(--ink4); background:none; border:none;
-  cursor:pointer; font-family:'DM Mono',monospace; padding:0;
-  margin-top:4px; display:block;
-}
-.btn-expand:hover { color:var(--ink2); }
-
-/* Stacks */
-.stacks-container {
-  background:var(--card); backdrop-filter:blur(16px);
-  border:1px solid var(--card-border); border-radius:var(--r);
-  overflow:hidden;
-}
-.stack-row {
-  padding:14px 16px; border-bottom:1px solid rgba(0,0,0,0.05);
-}
-.stack-row:last-child { border-bottom:none; }
-.stack-sites {
-  font-family:'DM Mono',monospace; font-size:10px;
-  color:var(--ink2); margin-bottom:5px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.stack-meta { display:flex; align-items:center; gap:8px; }
-.stack-conf {
-  font-family:'DM Mono',monospace; font-size:9px;
-  padding:2px 7px; border-radius:20px;
-}
-.conf-high { background:rgba(232,98,42,0.1); color:var(--ora); }
-.conf-mid { background:rgba(45,106,63,0.1); color:var(--green); }
-.stack-count { font-family:'DM Mono',monospace; font-size:9px; color:var(--ink4); }
-.stack-bar-bg { height:2px; background:rgba(0,0,0,0.07); border-radius:2px; margin-top:6px; }
-.stack-bar-fill { height:100%; border-radius:2px; background:var(--ora); }
-
-/* Full cards view */
-#all-cards-section { margin-bottom:24px; }
-.filter-row {
-  display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
-}
-.filter-btn {
-  padding:5px 12px; border-radius:20px; font-size:11px;
-  font-family:'DM Mono',monospace; cursor:pointer;
-  border:1px solid rgba(0,0,0,0.1); background:var(--bg2);
-  color:var(--ink3); transition:all .1s;
-}
-.filter-btn.active { background:var(--ink); color:white; border-color:var(--ink); }
-
-/* Empty state */
-.empty {
-  padding:40px 20px; text-align:center;
-  color:var(--ink4); font-size:12px; line-height:1.8;
-}
-.empty-icon { font-size:24px; margin-bottom:8px; opacity:0.4; display:block; }
-
-/* Search */
-.search-wrap { position:relative; margin-bottom:12px; }
-.search-input {
-  width:100%; padding:9px 12px 9px 34px;
-  background:var(--card); border:1px solid var(--card-border);
-  border-radius:var(--rs); font-family:'DM Sans',sans-serif;
-  font-size:12px; color:var(--ink); outline:none;
-  backdrop-filter:blur(16px);
-}
-.search-input::placeholder { color:var(--ink4); }
-.search-icon {
-  position:absolute; left:11px; top:50%; transform:translateY(-50%);
-  font-size:13px; pointer-events:none;
-}
-
-/* Trash */
-.trash-section { margin-bottom: 24px; }
-.trash-card {
-  padding:14px 16px; border-bottom:1px solid rgba(0,0,0,0.05);
-  opacity:0.65; transition:background .1s;
-}
-.trash-card:hover { background:rgba(255,255,255,0.4); opacity:1; }
-.trash-meta-row { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
-.trash-days { font-family:'DM Mono',monospace; font-size:9px; color:#dc2626; }
-.btn-restore { padding:3px 8px; border-radius:6px; font-size:10px; cursor:pointer; border:1px solid rgba(45,106,63,0.3); background:rgba(45,106,63,0.08); color:#2d6a3f; font-family:'DM Sans',sans-serif; }
-.btn-perm-del { padding:3px 8px; border-radius:6px; font-size:10px; cursor:pointer; border:1px solid rgba(220,38,38,0.3); background:rgba(220,38,38,0.08); color:#dc2626; font-family:'DM Sans',sans-serif; }
-
-/* Toast */
-.toast {
-  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  background:var(--ink); color:white; padding:10px 20px;
-  border-radius:20px; font-size:12px; font-weight:500;
-  opacity:0; transition:opacity .3s; pointer-events:none; z-index:999;
-  white-space:nowrap;
-}
-.toast.show { opacity:1; }
-
-/* Responsive */
-@media(max-width:768px) {
-  .stats-row { grid-template-columns:repeat(2,1fr); }
-  .grid-2 { grid-template-columns:1fr; }
-  .nav { padding:12px 16px; }
-  main { padding:20px 16px 60px; }
-}
-
-@keyframes fadeUp {
-  from { opacity:0; transform:translateY(12px); }
-  to { opacity:1; transform:translateY(0); }
-}
-.fade-up { animation:fadeUp 0.4s ease forwards; }
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp 0.4s ease forwards;}
 </style>
 </head>
 <body>
 
 <!-- Nav -->
 <nav class="nav">
-  <a class="nav-logo" href="#">
+  <a class="nav-logo" id="nav-logo" href="#">
     <div class="nav-logo-mark">🐜</div>
     AntLabs
   </a>
   <div class="nav-right">
-    <div class="nav-score" id="nav-score" style="display:none">
-      Score <span id="nav-score-val">0</span>/100
-    </div>
+    <div class="nav-score" id="nav-score" style="display:none">Score <span id="nav-score-val">0</span>/100</div>
     <button class="btn-sm btn-ghost" id="sync-btn" style="display:none">↻ Sync</button>
     <button class="btn-sm btn-ghost" id="signout-btn" style="display:none">Sign out</button>
+    <button class="btn-sm btn-primary" id="nav-login-btn">Sign in</button>
   </div>
 </nav>
 
 <main>
-  <!-- LOGIN -->
-  <div id="login-screen">
-    <div class="hero-eyebrow">Behavioral Prediction Engine</div>
-    <h1 class="hero-title">Your AI memory,<br><em>everywhere.</em></h1>
-    <p class="hero-sub">Sign in to view your Digital Passport — every question you've asked across all AI tools, your workflow patterns, and your behavioral graph.</p>
-    <button class="google-btn" id="login-btn">
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Sign in with Google
-    </button>
+
+<!-- ══════════════ LANDING ══════════════ -->
+<div id="landing-screen">
+
+  <!-- Hero -->
+  <div class="hero-section fade-up">
+    <div class="hero-eyebrow">Behavioral Prediction Engine · v1.5</div>
+    <h1 class="hero-title">One memory.<br><em>Every AI.</em></h1>
+    <p class="hero-sub">AntLabs silently captures your Q&A across ChatGPT, Gemini, Perplexity, and 15+ AI tools — then injects your context into every new conversation. Your LLMs finally remember you.</p>
+    <div class="hero-actions">
+      <button class="btn-hero btn-hero-primary" id="hero-install-btn">Add to Chrome — it's free</button>
+      <button class="btn-hero btn-hero-ghost" id="hero-signin-btn">Sign in to dashboard →</button>
+    </div>
+
+    <!-- Live demo -->
+    <div class="demo-strip">
+      <div class="demo-label">How it works — live example</div>
+      <div class="demo-flow">
+        <span class="demo-site">💬 Ask ChatGPT about DeFi</span>
+        <span class="demo-arrow">→</span>
+        <span class="demo-site">🔍 Open Perplexity</span>
+        <span class="demo-arrow">→</span>
+        <span class="demo-injected">🐜 DeFi context injected invisibly</span>
+        <span class="demo-arrow">→</span>
+        <span class="demo-site">Perplexity knows your research ✓</span>
+      </div>
+    </div>
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard">
-
-    <!-- Stats -->
-    <div class="stats-row fade-up" id="stats-row">
-      <div class="stat-card accent">
-        <div class="label">Memories</div>
-        <div class="value" id="stat-memories">0</div>
-        <div class="sub">Q&A captured</div>
+  <!-- How it works -->
+  <div class="section-block">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Three steps. Zero effort.</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-title">Capture</div>
+        <div class="step-desc">AntLabs watches your conversations across all AI tools using a MutationObserver on the page DOM. Every question and answer is saved locally to your device, silently.</div>
       </div>
-      <div class="stat-card">
-        <div class="label">Sites Tracked</div>
-        <div class="value" id="stat-sites">0</div>
-        <div class="sub">across all tools</div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-title">Score</div>
+        <div class="step-desc">Your Passport Score measures the depth of your memory across 7 dimensions — days active, topics covered, LLMs used, hours tracked, and workflow habits. It grows as you learn.</div>
       </div>
-      <div class="stat-card">
-        <div class="label">Time Tracked</div>
-        <div class="value" id="stat-time">0m</div>
-        <div class="sub">total active</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Patterns</div>
-        <div class="value" id="stat-patterns">0</div>
-        <div class="sub">workflows detected</div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-title">Inject</div>
+        <div class="step-desc">When you open any AI tool, AntLabs scores your cards by topic relevance and secretly prepends the most relevant context to your message. The LLM knows your history — you typed nothing extra.</div>
       </div>
     </div>
+  </div>
 
-    <!-- Score -->
-    <div class="score-bar-wrap fade-up">
-      <div class="score-header">
-        <span class="score-title">Passport Score</span>
-        <span class="score-val"><span id="score-num">0</span>/100</span>
+  <!-- Features -->
+  <div class="section-block">
+    <div class="section-eyebrow">Features</div>
+    <h2 class="section-title">Built for people who use AI seriously.</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <div class="feature-title">Cross-LLM memory</div>
+        <div class="feature-desc">Ask ChatGPT something. Open Perplexity. It already knows what you researched. AntLabs bridges the amnesia gap between every AI tool you use.</div>
       </div>
-      <div class="score-track">
-        <div class="score-fill" id="score-fill" style="width:0%"></div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Local-first storage</div>
+        <div class="feature-desc">All cards live in your browser's local storage. Nothing is sent anywhere unless you explicitly enable cloud sync. Your conversations stay yours.</div>
       </div>
-      <div class="score-label" id="score-label">Just started</div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Topic-aware injection</div>
+        <div class="feature-desc">AntLabs classifies every card by topic — crypto, finance, tech, business, health, learning. Only the most relevant cards are injected. No token waste.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <div class="feature-title">Behavioral graph</div>
+        <div class="feature-desc">Your workflow patterns, most-used tools, and topic clusters are tracked over time. The Passport Score shows how rich your context has become.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">☁️</div>
+        <div class="feature-title">Cloud sync (optional)</div>
+        <div class="feature-desc">Sign in with Google to back up your passport to the cloud. Access your memory from any device. Sync is always opt-in — never required.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎛️</div>
+        <div class="feature-title">Per-site control</div>
+        <div class="feature-desc">Toggle capture on or off for any specific site from the popup. Whitelist only the tools you want. You're always in control of what gets remembered.</div>
+      </div>
     </div>
+  </div>
 
-    <!-- Top section: recent memories + stacks -->
-    <div class="grid-2 fade-up">
+  <!-- LLM support -->
+  <div class="llm-strip">
+    <div class="llm-label">Works across all major AI tools</div>
+    <div class="llm-pills">
+      <span class="llm-pill">ChatGPT</span>
+      <span class="llm-pill">Gemini</span>
+      <span class="llm-pill">Perplexity</span>
+      <span class="llm-pill">Claude</span>
+      <span class="llm-pill">Grok</span>
+      <span class="llm-pill">DeepSeek</span>
+      <span class="llm-pill">Manus</span>
+      <span class="llm-pill">Mistral</span>
+      <span class="llm-pill">Groq</span>
+      <span class="llm-pill">Poe</span>
+      <span class="llm-pill">You.com</span>
+      <span class="llm-pill">Meta AI</span>
+      <span class="llm-pill">Copilot</span>
+      <span class="llm-pill">Phind</span>
+      <span class="llm-pill">+ more</span>
+    </div>
+  </div>
 
-      <!-- Recent memories -->
-      <div>
-        <div class="section-head">
-          <span class="section-title">Recent Memories</span>
-          <span class="section-count" id="recent-count">0</span>
-        </div>
-        <div class="cards-container" id="recent-cards">
-          <div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>
-        </div>
+  <!-- Pricing -->
+  <div class="section-block">
+    <div class="section-eyebrow">Pricing</div>
+    <h2 class="section-title">Start free. Upgrade when it clicks.</h2>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-price">$0</div>
+        <div class="pricing-period">forever</div>
+        <ul class="pricing-features">
+          <li>Unlimited Q&A cards</li>
+          <li>Local storage — your device only</li>
+          <li>Smart context injection</li>
+          <li>15+ LLMs supported</li>
+          <li>Passport score & analytics</li>
+          <li>Workflow pattern detection</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-outline" id="pricing-install-btn">Add to Chrome</button>
       </div>
-
-      <!-- One-click stacks -->
-      <div>
-        <div class="section-head">
-          <span class="section-title">Workflow Stacks</span>
-          <span class="section-count" id="stacks-count">0</span>
-        </div>
-        <div class="stacks-container" id="stacks-list">
-          <div class="empty"><span class="empty-icon">⚡</span>No patterns yet</div>
-        </div>
+      <div class="pricing-card featured">
+        <div class="pricing-tier">Sync</div>
+        <div class="pricing-price" style="color:white;">$6</div>
+        <div class="pricing-period">/month</div>
+        <ul class="pricing-features">
+          <li>Everything in Free</li>
+          <li>Cloud backup via Supabase</li>
+          <li>Cross-device sync</li>
+          <li>Access from any browser</li>
+          <li>Web dashboard</li>
+          <li>30-day trash recovery</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-white" id="pricing-sync-btn">Get Sync</button>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-price">$15</div>
+        <div class="pricing-period">/month</div>
+        <ul class="pricing-features">
+          <li>Everything in Sync</li>
+          <li>Team memory sharing</li>
+          <li>Memory analytics dashboard</li>
+          <li>Priority injection engine</li>
+          <li>API key capture mode</li>
+          <li>Early access to MCP mode</li>
+        </ul>
+        <button class="btn-pricing btn-pricing-outline" id="pricing-pro-btn">Join waitlist</button>
       </div>
     </div>
+  </div>
 
-    <!-- All memories -->
-    <div id="all-cards-section" class="fade-up">
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2 class="cta-title">Your AI tools are forgetting you.<br>Stop letting them.</h2>
+    <p class="cta-sub">Free to install. No API key needed. Works in 30 seconds.</p>
+    <button class="btn-hero btn-hero-primary" id="cta-install-btn">Add to Chrome — it's free</button>
+  </div>
+
+</div><!-- /landing -->
+
+<!-- ══════════════ DASHBOARD ══════════════ -->
+<div id="dashboard">
+  <div class="stats-row fade-up" id="stats-row">
+    <div class="stat-card accent">
+      <div class="label">Memories</div>
+      <div class="value" id="stat-memories">0</div>
+      <div class="sub">Q&A captured</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Sites Tracked</div>
+      <div class="value" id="stat-sites">0</div>
+      <div class="sub">across all tools</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Time Tracked</div>
+      <div class="value" id="stat-time">0m</div>
+      <div class="sub">total active</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Patterns</div>
+      <div class="value" id="stat-patterns">0</div>
+      <div class="sub">workflows detected</div>
+    </div>
+  </div>
+
+  <div class="score-bar-wrap fade-up">
+    <div class="score-header">
+      <span class="score-title">Passport Score</span>
+      <span class="score-val"><span id="score-num">0</span>/100</span>
+    </div>
+    <div class="score-track"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
+    <div class="score-label" id="score-label">Just started</div>
+  </div>
+
+  <div class="grid-2 fade-up">
+    <div>
       <div class="section-head">
-        <span class="section-title">All Context Cards</span>
-        <span class="section-count" id="all-count">0</span>
+        <span class="section-title-sm">Recent Memories</span>
+        <span class="section-count" id="recent-count">0</span>
       </div>
-
-      <div class="search-wrap">
-        <span class="search-icon">🔍</span>
-        <input class="search-input" id="search-input" placeholder="Search your memories..." type="text">
-      </div>
-
-      <div class="filter-row" style="justify-content:space-between;align-items:center;">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="filter-btn active" data-filter="all">All</button>
-          <button class="filter-btn" data-filter="ai_qa">Q&A only</button>
-          <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
-          <button class="filter-btn" data-filter="page_visit">Pages</button>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button id="delete-noise-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 Prompts & pages</button>
-          <button id="delete-all-qa-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 All Q&A</button>
-          <button id="delete-all-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.1);color:#dc2626;font-weight:500;">🗑 Everything</button>
-        </div>
-      </div>
-
-      <div class="cards-container" id="all-cards" style="max-height:600px">
-        <div class="empty"><span class="empty-icon">🧠</span>No cards yet</div>
+      <div class="cards-container" id="recent-cards">
+        <div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>
       </div>
     </div>
+    <div>
+      <div class="section-head">
+        <span class="section-title-sm">Workflow Stacks</span>
+        <span class="section-count" id="stacks-count">0</span>
+      </div>
+      <div class="stacks-container" id="stacks-list">
+        <div class="empty"><span class="empty-icon">⚡</span>No patterns yet</div>
+      </div>
+    </div>
+  </div>
 
-  <!-- Trash -->
+  <div id="all-cards-section" class="fade-up">
+    <div class="section-head">
+      <span class="section-title-sm">All Context Cards</span>
+      <span class="section-count" id="all-count">0</span>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search your memories..." type="text">
+    </div>
+    <div class="filter-row" style="justify-content:space-between;align-items:center;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="ai_qa">Q&A only</button>
+        <button class="filter-btn" data-filter="ai_prompt">Prompts</button>
+        <button class="filter-btn" data-filter="page_visit">Pages</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button id="delete-noise-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 Prompts & pages</button>
+        <button id="delete-all-qa-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.2);background:rgba(220,38,38,0.06);color:#dc2626;">🗑 All Q&A</button>
+        <button id="delete-all-btn" style="padding:5px 12px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid rgba(220,38,38,0.3);background:rgba(220,38,38,0.1);color:#dc2626;font-weight:500;">🗑 Everything</button>
+      </div>
+    </div>
+    <div class="cards-container" id="all-cards" style="max-height:600px">
+      <div class="empty"><span class="empty-icon">🧠</span>No cards yet</div>
+    </div>
+  </div>
+
   <div id="trash-section" class="trash-section fade-up" style="display:none">
     <div class="section-head">
-      <span class="section-title">🗑 Trash</span>
+      <span class="section-title-sm">🗑 Trash</span>
       <span class="section-count" id="trash-count">0</span>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -497,15 +494,15 @@ main {
       <div class="empty"><span class="empty-icon">🗑</span>Trash is empty</div>
     </div>
   </div>
+</div><!-- /dashboard -->
 
-  </div><!-- /dashboard -->
 </main>
-
 <div class="toast" id="toast"></div>
 
 <script>
 const SUPABASE_URL = 'https://cbatdmhhvwociaiggbuw.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_rDZvPu4ktkfLLczOvL7E6w_QB77SCif';
+const CHROME_STORE_URL = 'https://chromewebstore.google.com/detail/antlabs/lbkpbgkalldpmmflkhpjjlhknfkmpbih';
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -515,99 +512,121 @@ let allEvents = [];
 let allWorkflows = [];
 let currentSites = {};
 let currentTotalTime = 0;
+let trashedEvents = [];
 let currentFilter = 'all';
 let searchQuery = '';
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
-function esc(str) {
-  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function esc(str){return(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt(ms){const m=Math.floor((ms||0)/60000);return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m';}
+function timeAgo(ts){const d=Date.now()-ts;if(d<60000)return'just now';if(d<3600000)return Math.floor(d/60000)+'m ago';if(d<86400000)return Math.floor(d/3600000)+'h ago';return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── Unified scoring — matches extension exactly ───────────────────────────────
+function computeScore(events, sites, workflows, totalTimeSecs, firstSeen) {
+  const qaCards = (events||[]).filter(e => e.type === 'ai_qa');
+  const daysActive = Math.max(0, Math.floor((Date.now() - (firstSeen||Date.now())) / 86400000));
+  const hoursTracked = (totalTimeSecs||0) / 3600;
+  const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter','x.com','reddit','tiktok','netflix','canva'];
+  const cleanWF = (workflows||[]).filter(w => {
+    const s2 = (w.sites||[]).filter(s => !noiseList.some(n => s.includes(n)));
+    return s2.length >= 2 && (w.count||0) >= 3;
+  });
+  const lockedPatterns = cleanWF.filter(w => (w.count||0) >= 5).length;
+  const topicKws = {
+    crypto:   ['bitcoin','blockchain','defi','crypto','ethereum','web3','nft','token'],
+    finance:  ['invest','stock','finance','market','revenue','tax','equity','fund'],
+    tech:     ['code','software','ai','api','programming','algorithm','javascript','python'],
+    business: ['startup','business','marketing','sales','strategy','entrepreneur','mrr'],
+    health:   ['health','fitness','diet','exercise','sleep','nutrition','mental'],
+    learning: ['book','study','course','learn','education','skill','research']
+  };
+  const allText = qaCards.map(e => (e.title||'') + ' ' + (e.snippet||'')).join(' ').toLowerCase();
+  const topicsUsed = new Set();
+  Object.entries(topicKws).forEach(([topic, kws]) => {
+    if (kws.some(k => allText.includes(k))) topicsUsed.add(topic);
+  });
+  const llmDomains = new Set(qaCards.map(e => e.domain).filter(Boolean));
+  const siteCount = Array.isArray(sites) ? sites.length : Object.keys(sites||{}).length;
+
+  let score = 0;
+  score += Math.min(15, daysActive * 2);
+  score += Math.min(15, qaCards.length * 2);
+  score += Math.min(20, hoursTracked * 1.5);
+  score += Math.min(15, topicsUsed.size * 4);
+  score += Math.min(10, llmDomains.size * 3);
+  score += Math.min(15, lockedPatterns * 5);
+  score += Math.min(10, siteCount * 0.8);
+  return Math.min(100, Math.round(score));
 }
 
-// LLM logo mapping — uses real favicons
-const LLM_LOGOS = {
-  'chatgpt.com':          { favicon: 'https://chatgpt.com/favicon.ico', label: 'ChatGPT', color: '#10a37f' },
-  'chat.openai.com':      { favicon: 'https://chatgpt.com/favicon.ico', label: 'ChatGPT', color: '#10a37f' },
-  'claude.ai':            { favicon: 'https://claude.ai/favicon.ico', label: 'Claude', color: '#cc785c' },
-  'gemini.google.com':    { favicon: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg', label: 'Gemini', color: '#1a73e8' },
-  'perplexity.ai':        { favicon: 'https://perplexity.ai/favicon.ico', label: 'Perplexity', color: '#20808d' },
-  'grok.com':             { favicon: 'https://grok.com/favicon.ico', label: 'Grok', color: '#1a1a1a' },
-  'deepseek.com':         { favicon: 'https://www.deepseek.com/favicon.ico', label: 'DeepSeek', color: '#4d6bfe' },
-  'manus.im':             { favicon: 'https://manus.im/favicon.ico', label: 'Manus', color: '#6366f1' },
-  'mistral.ai':           { favicon: 'https://mistral.ai/favicon.ico', label: 'Mistral', color: '#ff7000' },
-  'poe.com':              { favicon: 'https://poe.com/favicon.ico', label: 'Poe', color: '#7c3aed' },
-  'groq.com':             { favicon: 'https://groq.com/favicon.ico', label: 'Groq', color: '#f97316' },
-  'you.com':              { favicon: 'https://you.com/favicon.ico', label: 'You.com', color: '#0ea5e9' },
-  'meta.ai':              { favicon: 'https://meta.ai/favicon.ico', label: 'Meta AI', color: '#0082fb' },
-  'copilot.microsoft.com':{ favicon: 'https://copilot.microsoft.com/favicon.ico', label: 'Copilot', color: '#0078d4' },
-  'phind.com':            { favicon: 'https://phind.com/favicon.ico', label: 'Phind', color: '#6366f1' },
-};
+function scoreLabel(s) {
+  if (s < 10) return 'Just started';
+  if (s < 20) return 'Early signal — keep going';
+  if (s < 35) return 'Building foundation';
+  if (s < 50) return 'Solid foundation';
+  if (s < 65) return 'Well established';
+  if (s < 80) return 'Rich passport';
+  if (s < 92) return 'Deep passport';
+  return 'Elite memory';
+}
 
+function updateScoreDisplay() {
+  const score = computeScore(allEvents, currentSites, allWorkflows, currentTotalTime, null);
+  document.getElementById('stat-memories').textContent = allEvents.filter(e=>!e.excluded).length;
+  document.getElementById('nav-score-val').textContent = score;
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-fill').style.width = score + '%';
+  document.getElementById('score-label').textContent = scoreLabel(score);
+}
+
+// ── LLM badges ────────────────────────────────────────────────────────────────
 function getLLMBadge(domain) {
   if (!domain) return '';
-  const key = Object.keys(LLM_LOGOS).find(k => domain.includes(k));
-  const llm = key ? LLM_LOGOS[key] : null;
-  if (!llm) {
-    return '<span class="llm-badge" style="background:rgba(0,0,0,0.06);color:var(--ink3);">🤖 ' + esc(domain.split('.')[0]) + '</span>';
-  }
-  // Use Google's favicon service as reliable fallback
   const faviconUrl = 'https://www.google.com/s2/favicons?domain=' + domain + '&sz=16';
-  return '<span class="llm-badge" style="background:' + llm.color + '12;color:' + llm.color + ';border:1px solid ' + llm.color + '20;">'
-    + '<img src="' + faviconUrl + '" style="width:12px;height:12px;border-radius:2px;object-fit:contain;" loading="lazy">'
-    + ' ' + esc(llm.label) + '</span>';
-}
-function fmt(ms) {
-  const m = Math.floor((ms||0)/60000);
-  return m < 60 ? m+'m' : Math.floor(m/60)+'h '+(m%60)+'m';
-}
-function timeAgo(ts) {
-  const d = Date.now() - ts;
-  if (d < 60000) return 'just now';
-  if (d < 3600000) return Math.floor(d/60000)+'m ago';
-  if (d < 86400000) return Math.floor(d/3600000)+'h ago';
-  return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-}
-function scoreLabel(s) {
-  if (s<10) return 'Empty — use AI tools daily';
-  if (s<20) return 'Shallow — ask more questions';
-  if (s<35) return 'Early signal — keep going';
-  if (s<50) return 'Taking shape — try more LLMs';
-  if (s<65) return 'Solid foundation';
-  if (s<80) return 'Rich context — AI knows you';
-  if (s<92) return 'Deep passport';
-  return 'Expert — AI knows you deeply';
-}
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  const label = domain.split('.')[0];
+  return '<span class="llm-badge"><img src="' + faviconUrl + '" style="width:12px;height:12px;border-radius:2px;" loading="lazy"> ' + esc(label) + '</span>';
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
-document.getElementById('login-btn').addEventListener('click', async () => {
+function doSignIn() {
   const redirectTo = window.location.origin + window.location.pathname;
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: redirectTo,
-      skipBrowserRedirect: false
-    }
-  });
-  if (error) toast('Login failed: ' + error.message);
+  sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, skipBrowserRedirect: false } })
+    .then(({error}) => { if (error) toast('Login failed: ' + error.message); });
+}
+
+['nav-login-btn','hero-signin-btn'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', doSignIn);
 });
 
 document.getElementById('signout-btn').addEventListener('click', async () => {
-  await sb.auth.signOut();
-  location.reload();
+  await sb.auth.signOut(); location.reload();
 });
 
-// ── Load passport from Supabase ───────────────────────────────────────────────
+// Chrome Store buttons
+['hero-install-btn','pricing-install-btn','cta-install-btn'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => window.open(CHROME_STORE_URL, '_blank'));
+});
+['pricing-sync-btn','pricing-pro-btn'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', doSignIn);
+});
+
+// Logo — go back to landing from dashboard
+document.getElementById('nav-logo').addEventListener('click', (e) => {
+  if (currentUser) {
+    e.preventDefault();
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('landing-screen').style.display = 'block';
+    document.getElementById('nav-login-btn').style.display = 'block';
+  }
+});
+
+// ── Load passport ─────────────────────────────────────────────────────────────
 async function loadPassport(userId) {
-  const { data, error } = await sb
-    .from('passports')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  const { data, error } = await sb.from('passports').select('*').eq('user_id', userId).single();
 
   if (error || !data) {
     document.getElementById('all-cards').innerHTML =
@@ -620,62 +639,20 @@ async function loadPassport(userId) {
   currentSites = data.sites || {};
   currentTotalTime = data.total_time || 0;
   trashedEvents = (data.trash || []).filter(e => (Date.now() - (e.deletedAt||0)) < 30 * 86400000);
-  const totalTime = data.total_time || 0;
-  const sites = data.sites || [];
 
-  // Score — harder, reflects true depth of context
-  const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter','x.com','reddit','tiktok','netflix','canva'];
-  const daysActive = Math.max(1, Math.floor((Date.now() - (data.first_seen||Date.now())) / 86400000));
-  const hoursTracked = totalTime / 3600;
-  const qaCards = allEvents.filter(e => e.type === 'ai_qa');
+  const sites = data.sites || [];
+  const siteCount = Array.isArray(sites) ? sites.length : Object.keys(sites).length;
   const cleanWF = allWorkflows.filter(w => {
+    const noiseList = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter'];
     const s2 = (w.sites||[]).filter(s => !noiseList.some(n => s.includes(n)));
     return s2.length >= 2 && (w.count||0) >= 3;
   });
 
-  // Topic diversity — how many different subjects covered
-  const TOPICS = ['crypto','bitcoin','finance','invest','tech','code','business','startup','health','learn','science','history','law','marketing'];
-  const allText = qaCards.map(e => (e.title||'') + ' ' + (e.snippet||'')).join(' ').toLowerCase();
-  const topicsCovered = TOPICS.filter(t => allText.includes(t)).length;
+  const score = computeScore(allEvents, sites, allWorkflows, currentTotalTime, data.first_seen);
 
-  // LLM diversity — how many different AI tools used
-  const llmDomains = new Set(qaCards.map(e => (e.domain||'').split('.')[0]).filter(Boolean));
-
-  // Answer depth — average length of full responses
-  const avgResponseLen = qaCards.length > 0
-    ? qaCards.reduce((sum, e) => sum + (e.fullResponse||e.snippet||'').length, 0) / qaCards.length
-    : 0;
-
-  // Scoring — each dimension is hard to max
-  let score = 0;
-
-  // Consistency (max 15) — need 14+ days active to max
-  score += Math.min(15, Math.floor(daysActive / 14 * 15));
-
-  // Volume (max 15) — need 50+ Q&A cards to max
-  score += Math.min(15, Math.floor(qaCards.length / 50 * 15));
-
-  // Depth (max 20) — need long, detailed answers (avg 800+ chars)
-  score += Math.min(20, Math.floor(avgResponseLen / 800 * 20));
-
-  // Topic breadth (max 15) — need 6+ different topics
-  score += Math.min(15, Math.floor(topicsCovered / 6 * 15));
-
-  // LLM diversity (max 10) — using 4+ different AI tools
-  score += Math.min(10, Math.floor(llmDomains.size / 4 * 10));
-
-  // Workflow habits (max 15) — need 5+ locked workflows
-  score += Math.min(15, cleanWF.filter(w=>w.count>=5).length * 3);
-
-  // Time investment (max 10) — need 20+ hours tracked
-  score += Math.min(10, Math.floor(hoursTracked / 20 * 10));
-
-  score = Math.min(100, Math.round(score));
-
-  // Update stats
   document.getElementById('stat-memories').textContent = allEvents.filter(e=>!e.excluded).length;
-  document.getElementById('stat-sites').textContent = Array.isArray(sites) ? sites.length : Object.keys(sites).length;
-  document.getElementById('stat-time').textContent = fmt(totalTime*1000);
+  document.getElementById('stat-sites').textContent = siteCount;
+  document.getElementById('stat-time').textContent = fmt(currentTotalTime * 1000);
   document.getElementById('stat-patterns').textContent = cleanWF.length;
   document.getElementById('nav-score-val').textContent = score;
   document.getElementById('nav-score').style.display = 'block';
@@ -692,85 +669,41 @@ async function loadPassport(userId) {
   document.getElementById('signout-btn').style.display = 'block';
 }
 
-// ── Render recent memories ────────────────────────────────────────────────────
-function updateScoreDisplay() {
-  // Recalculate score from current allEvents without full reload
-  const qaCards = allEvents.filter(e => e.type === 'ai_qa');
-  const TOPICS = ['crypto','bitcoin','finance','invest','tech','code','business','startup','health','learn','science','history','law','marketing'];
-  const allText = qaCards.map(e => (e.title||'') + ' ' + (e.snippet||'')).join(' ').toLowerCase();
-  const topicsCovered = TOPICS.filter(t => allText.includes(t)).length;
-  const llmDomains = new Set(qaCards.map(e => (e.domain||'').split('.')[0]).filter(Boolean));
-  const avgResponseLen = qaCards.length > 0
-    ? qaCards.reduce((sum, e) => sum + (e.fullResponse||e.snippet||'').length, 0) / qaCards.length : 0;
-
-  let score = 0;
-  score += Math.min(15, Math.floor(qaCards.length / 50 * 15));
-  score += Math.min(20, Math.floor(avgResponseLen / 800 * 20));
-  score += Math.min(15, Math.floor(topicsCovered / 6 * 15));
-  score += Math.min(10, Math.floor(llmDomains.size / 4 * 10));
-  score = Math.min(100, Math.round(score));
-
-  document.getElementById('stat-memories').textContent = allEvents.filter(e=>!e.excluded).length;
-  document.getElementById('nav-score-val').textContent = score;
-  document.getElementById('score-num').textContent = score;
-  document.getElementById('score-fill').style.width = score + '%';
-  document.getElementById('score-label').textContent = scoreLabel(score);
-}
-
+// ── Render cards ──────────────────────────────────────────────────────────────
 function renderRecentCards() {
   const container = document.getElementById('recent-cards');
   const recent = allEvents.filter(e => !e.excluded).slice(0, 8);
   document.getElementById('recent-count').textContent = recent.length;
-
-  if (!recent.length) {
-    container.innerHTML = '<div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>';
-    return;
-  }
-
+  if (!recent.length) { container.innerHTML = '<div class="empty"><span class="empty-icon">🧠</span>No memories yet</div>'; return; }
   container.innerHTML = recent.map((ev, i) => renderCard(ev, i, false)).join('');
   wireCardButtons(container);
 }
 
-// ── Render all cards ──────────────────────────────────────────────────────────
 function renderAllCards() {
   const container = document.getElementById('all-cards');
   let filtered = allEvents;
-
-  if (currentFilter !== 'all') {
-    filtered = filtered.filter(e => e.type === currentFilter);
-  }
+  if (currentFilter !== 'all') filtered = filtered.filter(e => e.type === currentFilter);
   if (searchQuery.length > 1) {
     const q = searchQuery.toLowerCase();
-    filtered = filtered.filter(e =>
-      (e.title||'').toLowerCase().includes(q) ||
-      (e.snippet||'').toLowerCase().includes(q) ||
-      (e.domain||'').toLowerCase().includes(q)
-    );
+    filtered = filtered.filter(e => (e.title||'').toLowerCase().includes(q) || (e.snippet||'').toLowerCase().includes(q) || (e.domain||'').toLowerCase().includes(q));
   }
-
   document.getElementById('all-count').textContent = filtered.length;
-
-  if (!filtered.length) {
-    container.innerHTML = '<div class="empty"><span class="empty-icon">🔍</span>No cards match</div>';
-    return;
-  }
-
+  if (!filtered.length) { container.innerHTML = '<div class="empty"><span class="empty-icon">🔍</span>No cards match</div>'; return; }
   container.innerHTML = filtered.map((ev, i) => renderCard(ev, i, true)).join('');
   wireCardButtons(container);
 }
 
 function renderCard(ev, i, showFull) {
-  const typeClass = ev.type === 'ai_qa' ? 'type-qa' : ev.type === 'ai_prompt' ? 'type-prompt' : 'type-page';
-  const typeLabel = ev.type === 'ai_qa' ? 'Q&A' : ev.type === 'ai_prompt' ? 'Prompt' : 'Page';
-  const hasAnswer = ev.type === 'ai_qa' && ev.snippet;
+  const typeClass = ev.type==='ai_qa'?'type-qa':ev.type==='ai_prompt'?'type-prompt':'type-page';
+  const typeLabel = ev.type==='ai_qa'?'Q&A':ev.type==='ai_prompt'?'Prompt':'Page';
+  const hasAnswer = ev.type==='ai_qa' && ev.snippet;
   const hasFull = ev.fullResponse && ev.fullResponse.length > (ev.snippet||'').length + 20;
-
   return `<div class="memory-card ${ev.excluded?'excluded':''}" data-id="${esc(String(ev.id))}">
     <span class="card-type ${typeClass}">${typeLabel}</span>
     <div class="card-question">${esc((ev.title||'').slice(0,120))}</div>
-    ${hasAnswer ? `<div class="card-answer">${esc((ev.snippet||'').slice(0,160))}</div>` : ''}
-    ${ev.type==='page_visit' && ev.snippet ? `<div class="card-snippet">${esc(ev.snippet.slice(0,140))}</div>` : ''}
-    ${hasFull && showFull ? `<button class="btn-expand" onclick="this.nextSibling.classList.toggle('open');this.textContent=this.nextSibling.classList.contains('open')?'▼ hide':'▶ show full response'">▶ show full response</button><div class="card-full">${esc(ev.fullResponse||'')}</div>` : ''}
+    ${hasAnswer?`<div class="card-answer">${esc((ev.snippet||'').slice(0,160))}</div>`:''}
+    ${ev.type==='page_visit'&&ev.snippet?`<div class="card-snippet">${esc(ev.snippet.slice(0,140))}</div>`:''}
+    ${hasFull&&showFull?`<button class="btn-expand" onclick="this.nextSibling.classList.toggle('open');this.textContent=this.nextSibling.classList.contains('open')?'▼ hide':'▶ show full'">▶ show full</button><div class="card-full">${esc(ev.fullResponse||'')}</div>`:''}
     <div class="card-footer">
       <span class="card-meta">${getLLMBadge(ev.domain)} <span>${timeAgo(ev.timestamp||0)}</span></span>
       <div class="card-actions">
@@ -784,58 +717,38 @@ function renderCard(ev, i, showFull) {
 function wireCardButtons(container) {
   container.querySelectorAll('.btn-excl').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const ev = allEvents.find(e => String(e.id) === id);
-      if (ev) {
-        ev.excluded = !ev.excluded;
-        await savePassport();
-        renderRecentCards();
-        renderAllCards();
-        toast(ev.excluded ? 'Card excluded from injection' : 'Card included');
-      }
+      const ev = allEvents.find(e => String(e.id) === btn.dataset.id);
+      if (ev) { ev.excluded = !ev.excluded; await savePassport(); renderRecentCards(); renderAllCards(); updateScoreDisplay(); toast(ev.excluded?'Excluded from injection':'Included'); }
     });
   });
   container.querySelectorAll('.btn-del').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const ev = allEvents.find(e => String(e.id) === id);
+      const ev = allEvents.find(e => String(e.id) === btn.dataset.id);
       if (!ev) return;
       ev.deletedAt = Date.now();
-      allEvents = allEvents.filter(e => String(e.id) !== id);
+      allEvents = allEvents.filter(e => String(e.id) !== btn.dataset.id);
       trashedEvents.unshift(ev);
       await savePassport();
-      // Recalculate score after delete
-      updateScoreDisplay();
-      renderRecentCards();
-      renderAllCards();
-      renderTrash();
+      updateScoreDisplay(); renderRecentCards(); renderAllCards(); renderTrash();
       toast('Moved to trash — recoverable for 30 days');
     });
   });
 }
 
-// ── Render stacks ─────────────────────────────────────────────────────────────
 function renderStacks(workflows) {
   const container = document.getElementById('stacks-list');
   const visible = workflows.filter(w=>w.count>=2).sort((a,b)=>b.count-a.count).slice(0,6);
   document.getElementById('stacks-count').textContent = visible.length;
-
-  if (!visible.length) {
-    container.innerHTML = '<div class="empty"><span class="empty-icon">⚡</span>No patterns detected yet</div>';
-    return;
-  }
-
+  if (!visible.length) { container.innerHTML = '<div class="empty"><span class="empty-icon">⚡</span>No patterns detected yet</div>'; return; }
   container.innerHTML = visible.map(w => {
     const conf = Math.min(99, 50 + w.count*5);
     const confClass = conf >= 70 ? 'conf-high' : 'conf-mid';
-    const sites = (w.sites||[]).filter(s => {
-      const noise = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter'];
-      return !noise.some(n=>s.includes(n));
-    });
+    const noise = ['whatsapp','spotify','youtube','mail.google','facebook','instagram','twitter'];
+    const sites = (w.sites||[]).filter(s => !noise.some(n=>s.includes(n)));
     return `<div class="stack-row">
       <div class="stack-sites">${esc(sites.slice(0,4).join(' → '))}</div>
       <div class="stack-meta">
-        <span class="stack-conf ${confClass}">${conf >= 88 ? '🔥 ' : ''}${conf}%</span>
+        <span class="stack-conf ${confClass}">${conf>=88?'🔥 ':''}${conf}%</span>
         <span class="stack-count">${w.count}x</span>
       </div>
       <div class="stack-bar-bg"><div class="stack-bar-fill" style="width:${conf}%"></div></div>
@@ -843,128 +756,36 @@ function renderStacks(workflows) {
   }).join('');
 }
 
-// savePassport defined above with trash support
-
-// ── Sync button ───────────────────────────────────────────────────────────────
-document.getElementById('sync-btn').addEventListener('click', async () => {
-  if (!currentUser) return;
-  await loadPassport(currentUser.id);
-  toast('Synced from latest data ✓');
-});
-
-// Delete buttons
-document.addEventListener('click', async (e) => {
-  const id = e.target.id;
-
-  if (id === 'delete-noise-btn') {
-    if (!confirm('Delete all Prompt and Page Visit cards?')) return;
-    allEvents = allEvents.filter(ev => ev.type === 'ai_qa');
-    await savePassport();
-    renderRecentCards(); renderAllCards();
-    toast('Prompts & pages deleted');
-  }
-
-  if (id === 'delete-all-qa-btn') {
-    if (!confirm('Move ALL Q&A cards to trash?')) return;
-    const qa = allEvents.filter(ev => ev.type === 'ai_qa').map(ev => ({...ev, deletedAt: Date.now()}));
-    trashedEvents = [...qa, ...trashedEvents].slice(0, 500);
-    allEvents = allEvents.filter(ev => ev.type !== 'ai_qa');
-    await savePassport();
-    renderRecentCards(); renderAllCards(); renderTrash();
-    toast('All Q&A moved to trash — recoverable for 30 days');
-  }
-
-  if (id === 'empty-trash-btn') {
-    if (!trashedEvents.length) return;
-    if (!confirm('Permanently delete all ' + trashedEvents.length + ' trashed cards? This cannot be undone.')) return;
-    trashedEvents = [];
-    await savePassport();
-    renderTrash();
-    toast('Trash emptied permanently');
-    return;
-  }
-
-  if (id === 'delete-all-btn') {
-    if (!confirm('Move EVERYTHING to trash?')) return;
-    const all = allEvents.map(ev => ({...ev, deletedAt: Date.now()}));
-    trashedEvents = [...all, ...trashedEvents].slice(0, 500);
-    allEvents = [];
-    await savePassport();
-    renderRecentCards(); renderAllCards(); renderTrash();
-    toast('All cards moved to trash');
-  }
-});
-
-// ── Search & filters ──────────────────────────────────────────────────────────
-document.getElementById('search-input').addEventListener('input', e => {
-  searchQuery = e.target.value.trim();
-  renderAllCards();
-});
-
-document.querySelectorAll('.filter-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter = btn.dataset.filter;
-    renderAllCards();
-  });
-});
-
-// ── Auth state ────────────────────────────────────────────────────────────────
-function showDashboard(user) {
-  currentUser = user;
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  loadPassport(user.id);
-}
-
-function showLogin() {
-  currentUser = null;
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('dashboard').style.display = 'none';
-}
-
-// ── Trash system ──────────────────────────────────────────────────────────────
-let trashedEvents = [];
-
+// ── Trash ─────────────────────────────────────────────────────────────────────
 function renderTrash() {
   const container = document.getElementById('trash-cards');
   const trashSection = document.getElementById('trash-section');
   if (!container) return;
-
-  // Auto-purge items older than 30 days
   const now = Date.now();
   trashedEvents = trashedEvents.filter(e => (now - (e.deletedAt||0)) < 30 * 86400000);
-
   document.getElementById('trash-count').textContent = trashedEvents.length;
   trashSection.style.display = trashedEvents.length ? 'block' : 'none';
-
-  if (!trashedEvents.length) {
-    container.innerHTML = '<div class="empty"><span class="empty-icon">🗑</span>Trash is empty</div>';
-    return;
-  }
-
+  if (!trashedEvents.length) { container.innerHTML = '<div class="empty"><span class="empty-icon">🗑</span>Trash is empty</div>'; return; }
   container.innerHTML = trashedEvents.map(ev => {
     const daysLeft = Math.max(0, 30 - Math.floor((now - (ev.deletedAt||0)) / 86400000));
-    return '<div class="trash-card" data-id="' + esc(String(ev.id)) + '">'
-      + '<span class="card-type type-qa">Q&A</span>'
-      + '<div class="card-question">' + esc((ev.title||'').slice(0,120)) + '</div>'
-      + '<div class="trash-meta-row">'
-      + '<span class="trash-days">⏳ ' + daysLeft + ' days left</span>'
-      + getLLMBadge(ev.domain)
-      + '<div style="display:flex;gap:6px;">'
-      + '<button class="btn-restore" data-id="' + esc(String(ev.id)) + '">↩ Restore</button>'
-      + '<button class="btn-perm-del" data-id="' + esc(String(ev.id)) + '">✕ Delete forever</button>'
-      + '</div></div></div>';
+    return `<div class="trash-card" data-id="${esc(String(ev.id))}">
+      <span class="card-type type-qa">Q&A</span>
+      <div class="card-question">${esc((ev.title||'').slice(0,120))}</div>
+      <div class="trash-meta-row">
+        <span class="trash-days">⏳ ${daysLeft} days left</span>
+        ${getLLMBadge(ev.domain)}
+        <div style="display:flex;gap:6px;">
+          <button class="btn-restore" data-id="${esc(String(ev.id))}">↩ Restore</button>
+          <button class="btn-perm-del" data-id="${esc(String(ev.id))}">✕ Delete forever</button>
+        </div>
+      </div>
+    </div>`;
   }).join('');
-
-  // Wire buttons
   container.querySelectorAll('.btn-restore').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id;
-      const ev = trashedEvents.find(e => String(e.id) === id);
+      const ev = trashedEvents.find(e => String(e.id) === btn.dataset.id);
       if (!ev) return;
-      trashedEvents = trashedEvents.filter(e => String(e.id) !== id);
+      trashedEvents = trashedEvents.filter(e => String(e.id) !== btn.dataset.id);
       delete ev.deletedAt;
       allEvents.unshift(ev);
       await savePassport();
@@ -972,27 +793,21 @@ function renderTrash() {
       toast('Card restored ✓');
     });
   });
-
   container.querySelectorAll('.btn-perm-del').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Delete forever? This cannot be undone.')) return;
-      const id = btn.dataset.id;
-      trashedEvents = trashedEvents.filter(e => String(e.id) !== id);
-      await savePassport();
-      renderTrash();
+      if (!confirm('Delete forever?')) return;
+      trashedEvents = trashedEvents.filter(e => String(e.id) !== btn.dataset.id);
+      await savePassport(); renderTrash();
       toast('Permanently deleted');
     });
   });
 }
 
+// ── Save passport ─────────────────────────────────────────────────────────────
 async function savePassport() {
   if (!currentUser) return;
-
-  // Show saving indicator
   const syncBtn = document.getElementById('sync-btn');
   if (syncBtn) syncBtn.textContent = '↻ Saving...';
-
-  // Try full save with trash column
   let { error } = await sb.from('passports').upsert({
     user_id: currentUser.id,
     events: allEvents,
@@ -1002,49 +817,90 @@ async function savePassport() {
     total_time: currentTotalTime,
     updated_at: new Date().toISOString()
   });
-
-  // If trash column doesn't exist yet, save without it
   if (error && error.message && error.message.includes('trash')) {
     const result = await sb.from('passports').upsert({
-      user_id: currentUser.id,
-      events: allEvents,
-      workflows: allWorkflows,
-      sites: currentSites,
-      total_time: currentTotalTime,
-      updated_at: new Date().toISOString()
+      user_id: currentUser.id, events: allEvents, workflows: allWorkflows,
+      sites: currentSites, total_time: currentTotalTime, updated_at: new Date().toISOString()
     });
     error = result.error;
   }
-
   if (syncBtn) syncBtn.textContent = '↻ Sync';
+  if (error) { toast('Save failed: ' + error.message); console.error('Save failed:', error); }
+}
 
-  if (error) {
-    toast('Save failed: ' + error.message);
-    console.error('Save failed:', error);
-  } else {
-    toast('Saved ✓');
+// ── Delete buttons ────────────────────────────────────────────────────────────
+document.addEventListener('click', async (e) => {
+  const id = e.target.id;
+  if (id === 'delete-noise-btn') {
+    if (!confirm('Delete all Prompt and Page Visit cards?')) return;
+    allEvents = allEvents.filter(ev => ev.type === 'ai_qa');
+    await savePassport(); renderRecentCards(); renderAllCards(); updateScoreDisplay();
+    toast('Prompts & pages deleted');
   }
+  if (id === 'delete-all-qa-btn') {
+    if (!confirm('Move ALL Q&A cards to trash?')) return;
+    const qa = allEvents.filter(ev => ev.type === 'ai_qa').map(ev => ({...ev, deletedAt: Date.now()}));
+    trashedEvents = [...qa, ...trashedEvents].slice(0, 500);
+    allEvents = allEvents.filter(ev => ev.type !== 'ai_qa');
+    await savePassport(); renderRecentCards(); renderAllCards(); renderTrash(); updateScoreDisplay();
+    toast('All Q&A moved to trash');
+  }
+  if (id === 'empty-trash-btn') {
+    if (!trashedEvents.length) return;
+    if (!confirm('Permanently delete all ' + trashedEvents.length + ' trashed cards?')) return;
+    trashedEvents = []; await savePassport(); renderTrash();
+    toast('Trash emptied permanently');
+  }
+  if (id === 'delete-all-btn') {
+    if (!confirm('Move EVERYTHING to trash?')) return;
+    const all = allEvents.map(ev => ({...ev, deletedAt: Date.now()}));
+    trashedEvents = [...all, ...trashedEvents].slice(0, 500);
+    allEvents = [];
+    await savePassport(); renderRecentCards(); renderAllCards(); renderTrash(); updateScoreDisplay();
+    toast('All cards moved to trash');
+  }
+});
+
+// ── Sync button ───────────────────────────────────────────────────────────────
+document.getElementById('sync-btn').addEventListener('click', async () => {
+  if (!currentUser) return;
+  await loadPassport(currentUser.id);
+  toast('Synced ✓');
+});
+
+// ── Search & filters ──────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', e => { searchQuery = e.target.value.trim(); renderAllCards(); });
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderAllCards();
+  });
+});
+
+// ── Auth state ────────────────────────────────────────────────────────────────
+function showDashboard(user) {
+  currentUser = user;
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('nav-login-btn').style.display = 'none';
+  loadPassport(user.id);
 }
 
 async function init() {
-  // Supabase automatically processes the hash fragment — just wait for it
-  // Then check session
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     history.replaceState(null, '', window.location.pathname);
     showDashboard(session.user);
     return;
   }
-
-  // Listen for auth state (handles the hash token automatically)
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       history.replaceState(null, '', window.location.pathname);
       showDashboard(session.user);
     }
-    if (event === 'SIGNED_OUT') {
-      showLogin();
-    }
+    if (event === 'SIGNED_OUT') location.reload();
   });
 }
 
