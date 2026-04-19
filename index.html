@@ -557,7 +557,12 @@ function computeScore(events, sites, workflows, totalTimeSecs, firstSeen) {
   score += Math.min(10, llmDomains.size * 3);
   score += Math.min(15, lockedPatterns * 5);
   score += Math.min(10, siteCount * 0.8);
-  return Math.min(100, Math.round(score));
+  score = Math.min(100, Math.round(score));
+  // Hard gate: no cards = low score regardless of hours/sites
+  if (qaCards.length === 0) score = Math.min(score, 8);
+  else if (qaCards.length < 3) score = Math.min(score, 25);
+  else if (qaCards.length < 7) score = Math.min(score, 50);
+  return score;
 }
 
 function scoreLabel(s) {
